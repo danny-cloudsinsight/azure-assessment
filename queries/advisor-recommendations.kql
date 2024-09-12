@@ -15,4 +15,5 @@ advisorresources
     subscriptionId,
     resourceGroup,
     resourceType,
-    resource
+    resource,
+    fullProperties = tostring(properties)

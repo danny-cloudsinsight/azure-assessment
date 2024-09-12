@@ -14,10 +14,12 @@ authorizationresources
     | where type == "microsoft.authorization/roledefinitions"
 ) on id
 | extend
-    roleName = properties1.roleName
+    roleName = properties1.roleName,
+    creationProperties = tostring(pack("createdOn", properties.createdOn, "updatedOn", properties.updatedOn, "createdBy", properties.createdBy, "updatedBy", properties.updatedBy))
 | project
     scopeType,
     scope,
     roleName,
     principalType= properties.principalType,
-    principalId= properties.principalId
+    principalId= properties.principalId,
+    creationProperties
