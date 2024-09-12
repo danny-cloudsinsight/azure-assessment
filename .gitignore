@@ -1,2 +1,5 @@
 # Ignore all results files
 results/*.csv
+
+#Ignore Apple system file
+.DS_Store

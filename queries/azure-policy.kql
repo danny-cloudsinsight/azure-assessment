@@ -15,4 +15,7 @@ policyresources
     assignmentDisplayName,
     assignmentDescription,
     scopeType,
-    scope
+    scope,
+    location,
+    fullProperties = tostring(properties),
+    identity = tostring(identity)
