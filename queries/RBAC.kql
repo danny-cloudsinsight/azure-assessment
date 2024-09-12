@@ -1,0 +1,23 @@
+authorizationresources
+| where type == "microsoft.authorization/roleassignments"
+| extend
+    scope = iff(properties.scope == "/", "root", split(properties.scope,"/")[-1]),
+    scopeType =  case (properties.scope =="/", "managementGroups",
+                        properties.scope startswith("/providers/Microsoft.Management/"), "managementGroups",
+                        properties.scope startswith("/providers/Microsoft.Subscription/aliases"), "subscriptions",
+                        properties.scope contains("/providers/"), strcat_array(array_slice(split(split(properties.scope,"/providers")[-1],"/"),0,(array_length(split(split(properties.scope,"/providers")[-1],"/"))-2)), "/"),
+                        properties.scope contains("/resourceGroups/"), "resourceGroups",
+                        "subscriptions" ),
+    id = tostring(properties.roleDefinitionId)
+| join kind=leftouter(
+    authorizationresources
+    | where type == "microsoft.authorization/roledefinitions"
+) on id
+| extend
+    roleName = properties1.roleName
+| project
+    scopeType,
+    scope,
+    roleName,
+    principalType= properties.principalType,
+    principalId= properties.principalId

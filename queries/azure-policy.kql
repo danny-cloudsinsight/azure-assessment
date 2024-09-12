@@ -1,0 +1,18 @@
+policyresources
+| where type == "microsoft.authorization/policyassignments"
+| extend
+    policyDefinitionId = tostring(properties.policyDefinitionId),
+    assignmentDisplayName = properties.displayName,
+    assignmentDescription = properties.description,
+    scopeType = split(properties.scope, "/")[-2],
+    scope = split(properties.scope, "/")[-1]
+| join kind=leftouter(policyresources | where type in ("microsoft.authorization/policydefinitions", "microsoft.authorization/policysetdefinitions")) on $left.policyDefinitionId == $right.id
+| project
+    name,
+    policyDefinitionId,
+    policyDefinitionDisplayName = properties1.displayName,
+    policyDefinitionDescription = properties1.description,
+    assignmentDisplayName,
+    assignmentDescription,
+    scopeType,
+    scope

@@ -1,0 +1,23 @@
+resources
+| where type == "microsoft.storage/storageaccounts"
+| extend
+    fullDetails = pack_all()
+| join kind=leftouter(resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
+| project
+    name,
+    kind,
+    location,
+    resourceGroup,
+    subscriptionName = name1,
+    skuName = sku.name,
+    skuTier = sku.tier,
+    accessTier = properties.accessTier,
+    publicNetworkAccess = properties.publicNetworkAccess,
+    allowBlobPublicAccess  = properties.allowBlobPublicAccess,
+    isLocalUserEnabled = properties.isLocalUserEnabled,
+    supportsHttpsTrafficOnly = properties.supportsHttpsTrafficOnly,
+    minimumTlsVersion = properties.minimumTlsVersion,
+    defaultToOAuthAuthentication = properties.defaultToOAuthAuthentication,
+    allowSharedKeyAccess = properties.allowSharedKeyAccess,
+    tags,
+    fullDetails

@@ -1,0 +1,22 @@
+ResourceContainers
+| join kind=leftouter(resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
+| extend
+    identifier = iff(
+        type endswith "subscriptions", 
+            subscriptionId,
+            name
+    ),
+    displayName = iff(isnotnull(properties.displayName), properties.displayName, name),
+    resourceType = split(tostring(type), "/")[-1],
+    subscriptionId = iff(type endswith "subscriptions", subscriptionId, ""),
+    parentName = iff(type endswith "resourcegroups", name1, iff(type endswith "subscriptions", properties.managementGroupAncestorsChain[0].name, properties.details.parent.name)),
+    level = iff(
+        type endswith "resourcegroups", 
+            array_length(properties1.managementGroupAncestorsChain) + 1,
+            iff(type endswith "subscriptions",
+                array_length(properties.managementGroupAncestorsChain),
+                array_length(properties.details.managementGroupAncestorsChain)
+                )
+    )
+| project level, resourceType, identifier, displayName, parentName
+| order by level asc, parentName asc

@@ -1,0 +1,18 @@
+advisorresources
+| where type == "microsoft.advisor/recommendations"
+| extend
+    id = properties.recommendationTypeId,
+    description = properties.shortDescription.solution,
+    resource = iff(properties.impactedField == "Microsoft.Subscriptions/subscriptions",subscriptionId,split(properties.resourceMetadata.resourceId,"/")[8]),
+    resourceType = properties.impactedField,
+    category = properties.category,
+    impact = properties.impact
+| project
+    id,
+    description,
+    category,
+    impact,
+    subscriptionId,
+    resourceGroup,
+    resourceType,
+    resource

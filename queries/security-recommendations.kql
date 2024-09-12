@@ -1,0 +1,126 @@
+securityresources
+| where type =~ "microsoft.security/assessments"
+| extend assessmentType = iff(type == "microsoft.security/assessments", tostring(properties.metadata.assessmentType), dynamic(null))
+| where (type == "microsoft.security/assessments" and (assessmentType in~ ("BuiltIn", "CustomerManaged")))
+| extend assessmentTypeSkimmed = iff(
+                                     type == "microsoft.security/assessments",
+                                     case(
+                                         tostring(properties.metadata.assessmentType) == "BuiltIn",
+                                         "BuiltIn",
+                                         tostring(properties.metadata.assessmentType) == "BuiltInPolicy",
+                                         "BuiltIn",
+                                         tostring(properties.metadata.assessmentType) == "CustomPolicy",
+                                         "Custom",
+                                         tostring(properties.metadata.assessmentType) == "CustomerManaged",
+                                         "Custom",
+                                         tostring(properties.metadata.assessmentType) == "ManualCustomPolicy",
+                                         "Custom",
+                                         tostring(properties.metadata.assessmentType) == "ManualBuiltInPolicy",
+                                         "BuiltIn",
+                                         dynamic(null)
+                                     ),
+                                     dynamic(null)
+                                 )
+| extend assessmentId = tolower(id)
+| extend assessmentKey = iff(type == "microsoft.security/assessments", name, dynamic(null))
+| extend source = iff(type == "microsoft.security/assessments", trim(' ', tolower(tostring(properties.resourceDetails.Source))), dynamic(null))
+| extend statusCode = iff(type == "microsoft.security/assessments", tostring(properties.status.code), dynamic(null))
+| extend resourceId = iff(
+                          type == "microsoft.security/assessments",
+                          trim(
+                              " ",
+                              tolower(
+                                  tostring(
+                                      case(
+                                          source =~ "azure",
+                                          properties.resourceDetails.Id,
+                                          (type == "microsoft.security/assessments" and (source =~ "aws" and isnotempty(tostring(properties.resourceDetails.ConnectorId)))),
+                                          properties.resourceDetails.Id,
+                                          (type == "microsoft.security/assessments" and (source =~ "gcp" and isnotempty(tostring(properties.resourceDetails.ConnectorId)))),
+                                          properties.resourceDetails.Id,
+                                          source =~ "aws",
+                                          properties.resourceDetails.AzureResourceId,
+                                          source =~ "gcp",
+                                          properties.resourceDetails.AzureResourceId,
+                                          extract("^(?i)(.+)/providers/Microsoft.Security/assessments/.+$", 1, id)
+                                      )
+                                  )
+                              )
+                          ),
+                          dynamic(null)
+                      )
+| extend resourceName = iff(type == "microsoft.security/assessments", tostring(coalesce(properties.resourceDetails.ResourceName, properties.additionalData.CloudNativeResourceName, properties.additionalData.ResourceName, properties.additionalData.resourceName, split(resourceId, '/')[-1], extract(@"(.+)/(.+)", 2, resourceId))), dynamic(null))
+| extend resourceType = iff(type == "microsoft.security/assessments", tolower(properties.resourceDetails.ResourceType), dynamic(null))
+| extend riskLevelText = iff(type == "microsoft.security/assessments", tostring(properties.risk.level), dynamic(null))
+| extend riskLevel = iff(
+                         type == "microsoft.security/assessments",
+                         case(
+                             riskLevelText =~ "Critical",
+                             4,
+                             riskLevelText =~ "High",
+                             3,
+                             riskLevelText =~ "Medium",
+                             2,
+                             riskLevelText =~ "Low",
+                             1,
+                             0
+                         ),
+                         dynamic(null)
+                     )
+| extend riskFactors = iff(type == "microsoft.security/assessments", iff(isnull(properties.risk.riskFactors), dynamic([]), properties.risk.riskFactors), dynamic(null))
+| extend attackPaths = array_length(iff(type == "microsoft.security/assessments", iff(isnull(properties.risk.attackPathsReferences), dynamic([]), properties.risk.attackPathsReferences), dynamic(null)))           
+| extend displayName = iff(type == "microsoft.security/assessments", tostring(properties.displayName), dynamic(null))
+| extend statusCause = iff(type == "microsoft.security/assessments", tostring(properties.status.cause), dynamic(null))
+| extend isExempt = iff(type == "microsoft.security/assessments", iff(statusCause == "Exempt", tobool(1), tobool(0)), dynamic(null))
+| extend statusChangeDate = tostring(iff(type == "microsoft.security/assessments", todatetime(properties.status.statusChangeDate), dynamic(null)))
+| extend maturityLevel = iff(
+                             type == "microsoft.security/assessments",
+                             case(
+                                 isnull(properties.metadata.preview),
+                                 "GA",
+                                 tobool(properties.metadata.preview),
+                                 "Preview",
+                                 "GA"
+                             ),
+                             dynamic(null)
+                         )
+| extend environment = iff(
+                           type == "microsoft.security/assessments",
+                           case(
+                               source == "azure" or source == "onpremise",
+                               "Azure",
+                               source == "aws",
+                               "AWS",
+                               source == "gcp",
+                               "GCP",
+                               source == "github",
+                               "GitHub",
+                               source == "gitlab",
+                               "GitLab",
+                               source == "azuredevops",
+                               "AzureDevOps",
+                               source == "dockerhub",
+                               "DockerHub",
+                               dynamic(null)
+                           ),
+                           dynamic(null)
+                       )
+| where environment in~ ("Azure")
+| where statusCode == "Unhealthy"
+| project
+    assessmentId,
+    maturityLevel,
+    environment,
+    statusChangeDate,
+    isExempt,
+    riskLevel,
+    riskFactors,
+    attackPaths,
+    statusCode,
+    displayName,
+    resourceId,               
+    assessmentKey,
+    resourceType,
+    resourceName,
+    assessmentTypeSkimmed         
+| order by riskLevel desc, attackPaths desc, displayName

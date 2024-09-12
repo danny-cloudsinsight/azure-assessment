@@ -1,0 +1,6 @@
+resources
+| where type !in (
+    "microsoft.storage/storageaccounts",
+    "microsoft.network/virtualnetworks")
+| summarize numberOfResources = count() by type
+| order by numberOfResources desc

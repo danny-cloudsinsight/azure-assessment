@@ -1,0 +1,42 @@
+{
+    "queries": [
+        {
+            "name": "resource-organization"
+        },
+        {
+            "name": "resources-overview"
+        },
+        {
+            "name": "resources-full-raw"
+        },
+        {
+            "name": "azure-policy"
+        },
+        {
+            "name": "advisor-recommendations"
+        },
+        {
+            "name": "compliance-recommendations"
+        },
+        {
+            "name": "security-recommendations"
+        },
+        {
+            "name": "RBAC"
+        }
+    ],
+    "resourceTypes": [
+        {
+            "name": "storageAccounts",
+            "type": "microsoft.storage/storageaccounts"
+        },
+        {
+            "name": "virtualNetworks",
+            "type": "microsoft.network/virtualnetworks"
+        },
+        {
+            "name": "missingTypes",
+            "type": ""
+        }
+    ]
+}

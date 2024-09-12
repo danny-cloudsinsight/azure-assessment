@@ -1,0 +1,4 @@
+resources
+| join kind=leftouter(resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
+| project name, type, location, resourceGroup, subscriptionName = name1
+| order by name asc

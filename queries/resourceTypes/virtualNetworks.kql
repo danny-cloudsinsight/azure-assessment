@@ -1,0 +1,26 @@
+resources
+| where type == "microsoft.network/virtualnetworks"
+| extend
+    fullDetails = pack_all(),
+    addressSpace = properties.addressSpace.addressPrefixes,
+    subnetsArray = iif(array_length(properties.subnets) == 0, dynamic([{"name": "", "properties": {"addressPrefix": ""}}]), properties.subnets)
+| join kind=leftouter(resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
+| mv-expand subnet = subnetsArray to typeof(dynamic)
+| extend 
+    subnetName = iif(subnet.name == "", "No subnet", subnet.name),
+    subnetAddressPrefix = iif(subnet.properties.addressPrefix == "", "No address prefix", subnet.properties.addressPrefix),
+    virtualNetworkPeerings = tostring(properties.virtualNetworkPeerings)
+| summarize 
+    subnets = make_list(pack("name", subnetName, "addressPrefixes", subnetAddressPrefix))
+    by name, location, resourceGroup, name1, tostring(tags), tostring(fullDetails), tostring(addressSpace), virtualNetworkPeerings
+| project
+    name,
+    location,
+    resourceGroup,
+    subscriptionName = name1,
+    addressSpace,
+    subnets = tostring(subnets),
+    virtualNetworkPeerings,
+    fullDetails,
+    tags
+    

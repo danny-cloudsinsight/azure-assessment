@@ -1,0 +1,1 @@
+This folder is the default location to store the results files.
