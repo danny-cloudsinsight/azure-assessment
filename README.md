@@ -13,4 +13,6 @@
 4. Run the script *executeQuery.ps1*
 5. Results will be stored as .csv files in the *results* folder
  
+## Release Notes
 
+See [Release Notes](./releaseNotes.md)
