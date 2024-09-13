@@ -25,7 +25,7 @@ function ExecuteQuery {
     }
 
     try {
-        $results = Search-AzGraph -Query "$queryContent" -UseTenantScope
+        $results = Search-AzGraph -Query "$queryContent" -UseTenantScope -First 1000
     }
     catch {
         Write-Warning "Something went wrong when executing the KQL query in the file $inputFile. Check below message for more information"
