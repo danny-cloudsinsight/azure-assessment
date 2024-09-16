@@ -32,6 +32,11 @@
         },
         {
             "name": "virtualNetworks",
+            "type": "microsoft.network/virtualnetworks",
+            "custom": true
+        },
+        {
+            "name": "vnetPeerings",
             "type": "microsoft.network/virtualnetworks"
         },
         {

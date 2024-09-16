@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 Import-Module ./modules/functions.psm1 -Force
+Import-Module ./modules/customScripts.psm1 -Force
 
 $inputFile = (get-content "./config.json" | ConvertFrom-Json)
 
@@ -33,6 +34,9 @@ foreach ($resourceType in $inputFile.resourceTypes) {
     $results = ExecuteQuery -inputFile $queryInput
 
     if($results){
+        if($resourceType.custom){
+            $results = ExecuteCustomScript -resourceType $($resourceType.name) -object $results
+        }
         OutputCSV -object $results -outputFile $queryOutput
     }else {
         Write-Warning "Results object does not exist!"
