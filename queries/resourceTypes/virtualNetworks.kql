@@ -19,8 +19,8 @@ resources
     resourceGroup,
     subscriptionName = name1,
     addressSpace,
-    subnets = tostring(subnets),
-    virtualNetworkPeerings,
+    subnets,
+    virtualNetworkPeerings = parse_json(virtualNetworkPeerings),
     fullDetails,
     tags
     

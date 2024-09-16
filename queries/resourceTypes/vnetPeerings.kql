@@ -1,0 +1,13 @@
+resources
+| where type == "microsoft.network/virtualnetworks"
+| mv-expand vnetPeerings = properties.virtualNetworkPeerings
+| project
+    name = vnetPeerings.name,
+    sourceVirtualNetwork = name,
+    destinationVirtualNetwork = split(vnetPeerings.properties.remoteVirtualNetwork.id, "/")[-1],
+    allowVirtualNetworkAccess = vnetPeerings.properties.allowVirtualNetworkAccess,
+    allowForwardedTraffic = vnetPeerings.properties.allowForwardedTraffic,
+    allowGatewayTransit = vnetPeerings.properties.allowGatewayTransit,
+    peerCompleteVnets = vnetPeerings.properties.peerCompleteVnets,
+    peeringState = vnetPeerings.properties.peeringState,
+    fullDetails = vnetPeerings
