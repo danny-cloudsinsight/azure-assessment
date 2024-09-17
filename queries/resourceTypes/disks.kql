@@ -1,0 +1,14 @@
+resources
+| where type == "microsoft.compute/disks"
+| extend
+    fullDetails = pack_all(),
+    vmName = iff(isnotempty(managedBy), split(managedBy, "/")[-1], "Not attached to VM")
+| project
+    name,
+    vmName,
+    resourceGroup,
+    sku = sku.name,
+    size = properties.diskSizeGB,
+    state = properties.diskState,
+    tags,
+    fullDetails

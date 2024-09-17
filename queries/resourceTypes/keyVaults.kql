@@ -1,0 +1,21 @@
+resources
+| where type == "microsoft.keyvault/vaults"
+| extend
+    fullDetails = pack_all(),
+    sku = strcat(properties.sku.family," - ",properties.sku.name),
+    accessPolicies = iff(tobool(properties.enableRbacAuthorization), "Not used", properties.accessPolicies)
+| join kind=leftouter (resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
+| project
+    name,
+    resourceGroup,
+    subscription = name1,
+    location,
+    sku,
+    publicNetworkAccess = properties.publicNetworkAccess,
+    enableSoftDelete = properties.enableSoftDelete,
+    softDeleteRetention = properties.softDeleteRetentionInDays,
+    enableRBAC = properties.enableRbacAuthorization,
+    accessPolicies,
+    enablePurgeProtection = properties.enablePurgeProtection,
+    tags,
+    fullDetails
