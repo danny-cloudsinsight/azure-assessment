@@ -40,6 +40,28 @@
             "type": "microsoft.network/virtualnetworks"
         },
         {
+            "name": "virtualMachines",
+            "type": "microsoft.compute/virtualmachines",
+            "custom": true
+        },
+        {
+            "name": "networkInterfaces",
+            "type": "microsoft.network/networkinterfaces"
+        },
+        {
+            "name": "publicIpAddresses",
+            "type": "microsoft.network/publicipaddresses"
+        },
+        {
+            "name": "networkSecurityGroups",
+            "type": "microsoft.network/networksecuritygroups",
+            "custom": true
+        },
+        {
+            "name": "nsgRules",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+        },
+        {
             "name": "missingTypes",
             "type": ""
         }

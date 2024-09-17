@@ -9,9 +9,10 @@ resources
 | extend 
     subnetName = iif(subnet.name == "", "No subnet", subnet.name),
     subnetAddressPrefix = iif(subnet.properties.addressPrefix == "", "No address prefix", subnet.properties.addressPrefix),
+    subnetNsg = iif(isnotempty(subnet.properties.networkSecurityGroup), split(subnet.properties.networkSecurityGroup.id, "/")[-1],"None"),
     virtualNetworkPeerings = tostring(properties.virtualNetworkPeerings)
 | summarize 
-    subnets = make_list(pack("name", subnetName, "addressPrefixes", subnetAddressPrefix))
+    subnets = make_list(pack("name", subnetName, "addressPrefixes", subnetAddressPrefix, "networkSecurityGroup", subnetNsg))
     by name, location, resourceGroup, name1, tostring(tags), tostring(fullDetails), tostring(addressSpace), virtualNetworkPeerings
 | project
     name,
@@ -21,6 +22,5 @@ resources
     addressSpace,
     subnets,
     virtualNetworkPeerings = parse_json(virtualNetworkPeerings),
-    fullDetails,
-    tags
-    
+    fullDetails = parse_json(fullDetails),
+    tags = parse_json(tags)

@@ -1,0 +1,12 @@
+resources
+| where type == "microsoft.network/networksecuritygroups"
+| extend
+    fullDetails = pack_all()
+| project
+    name,
+    resourceGroup,
+    networkInterfaces = properties.networkInterfaces,
+    subnets = properties.subnets,
+    securityRules = properties.securityRules,
+    tags,
+    fullDetails

@@ -1,0 +1,32 @@
+resources
+| where type == "microsoft.network/networkinterfaces"
+| extend
+    fullDetails = pack_all(),
+    vmName = split(properties.virtualMachine.id,"/")[-1],
+    nsg = split(properties.networkSecurityGroup.id, "/")[-1],
+    primary = tostring(properties.primary)
+| mv-expand ipConfiguration = properties.ipConfigurations
+| extend
+    ipConfigName = ipConfiguration.name,
+    ipConfigVnet = split(ipConfiguration.properties.subnet.id, "/")[-3],
+    ipConfigSubnet = split(ipConfiguration.properties.subnet.id, "/")[-1],
+    ipConfigPrivateIp = ipConfiguration.properties.privateIPAddress,
+    ipConfigPrimary =  ipConfiguration.properties.primary,
+    ipConfigPublicIp = split(ipConfiguration.properties.publicIPAddress.id,"/")[-1] //join with the public ip resource (properties.ipAddress)
+| summarize 
+    ipConfigurations = make_list(pack("name", ipConfigName,
+                         "vnet", ipConfigVnet,
+                         "subnet", ipConfigSubnet,
+                         "primary", ipConfigPrimary,
+                         "privateIPAddress", ipConfigPrivateIp,
+                         "publicIP", ipConfigPublicIp))
+    by name, resourceGroup, tostring(vmName), primary, tostring(tags), tostring(fullDetails), tostring(nsg)
+| project
+    name,
+    vmName,
+    resourceGroup,
+    ipConfigurations,
+    nsg,
+    primary,
+    tags,
+    fullDetails
