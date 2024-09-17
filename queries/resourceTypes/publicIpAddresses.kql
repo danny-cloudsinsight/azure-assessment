@@ -1,0 +1,19 @@
+resources
+| where type == "microsoft.network/publicipaddresses"
+| extend
+    fullDetails = pack_all(),
+    networkInterface =  split(properties.ipConfiguration,"/")[-3],
+    ipAddress = properties.ipAddress
+| join kind=leftouter
+    (resources 
+        | where type == "microsoft.compute/virtualmachines"
+        | where properties contains properties.ipConfiguration)
+    on subscriptionId
+| project
+    name,
+    networkInterface,
+    virtualMachine = name1,
+    resourceGroup,
+    ipAddress,
+    tags,
+    fullDetails

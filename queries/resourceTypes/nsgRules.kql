@@ -1,0 +1,15 @@
+resources
+| where type == "microsoft.network/networksecuritygroups"
+| mv-expand rules = properties.securityRules
+| project
+    ruleName = rules.name,
+    nsgName = name,
+    direction = rules.properties.direction,
+    priority = rules.properties.priority,
+    protocol = rules.properties.protocol,
+    type = rules.properties.access,
+    sourceAddresses = iff(isempty(rules.properties.sourceAddressPrefix), rules.properties.sourceAddressPrefixes, rules.properties.sourceAddressPrefix),
+    sourcePorts = iff(isempty(rules.properties.sourcePortRange), rules.properties.sourcePortRanges, rules.properties.sourcePortRange),
+    destinationAddresses = iff(isempty(rules.properties.destinationAddressPrefix), rules.properties.destinationAddressPrefixes, rules.properties.destinationAddressPrefix),
+    destinationPorts = iff(isempty(rules.properties.destinationPortRange), rules.properties.destinationPortRanges, rules.properties.destinationPortRange)
+| order by nsgName, tostring(direction), tolong(priority) asc

@@ -1,0 +1,25 @@
+resources
+| where type == "microsoft.compute/virtualmachines"
+| extend
+    fullDetails = pack_all()
+| join kind=leftouter (resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
+| project
+    name,
+    computerName = properties.osProfile.computerName,
+    location,
+    resourceGroup, 
+    subscriptionName = name1,
+    networkInterface = properties.networkProfile.networkInterfaces,
+    vmSize = properties.hardwareProfile.vmSize,
+    imageName =  properties.storageProfile.imageReference.offer,
+    osDiskName = properties.storageProfile.osDisk.name,
+    osDiskSizeGB = properties.storageProfile.osDisk.diskSizeGB,
+    osDiskDeleteOption = properties.storageProfile.osDisk.deleteOption,
+    dataDisks =  properties.storageProfile.dataDisks,
+    disablePasswordAuthentication = properties.osProfile.linuxConfiguration.disablePasswordAuthentication,
+    securityProfile = properties.securityProfile,
+    state = properties.extended.instanceView.powerState.displayStatus,
+    bootDiagnostics = properties.diagnosticsProfile.bootDiagnostics.enabled,
+    tags,
+    fullDetails
+    
