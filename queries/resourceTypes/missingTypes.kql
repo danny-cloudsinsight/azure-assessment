@@ -1,6 +1,13 @@
 resources
 | where type !in (
     "microsoft.storage/storageaccounts",
-    "microsoft.network/virtualnetworks")
+    "microsoft.network/virtualnetworks",
+    "microsoft.compute/disks",
+    "microsoft.compute/virtualmachines",
+    "microsoft.network/publicipaddresses",
+    "microsoft.network/networkinterfaces",
+    "microsoft.network/networksecuritygroups",
+    "microsoft.keyvault/vaults"
+    )
 | summarize numberOfResources = count() by type
 | order by numberOfResources desc
