@@ -1,4 +1,8 @@
 {
+    "MicrosoftGraph": {
+        "enabled": true,
+        "scopes": "Directory.Read.All"
+    },
     "queries": [
         {
             "name": "resource-organization"
@@ -22,7 +26,8 @@
             "name": "security-recommendations"
         },
         {
-            "name": "RBAC"
+            "name": "RBAC",
+            "custom": true
         }
     ],
     "resourceTypes": [
