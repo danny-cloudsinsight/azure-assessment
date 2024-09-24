@@ -323,8 +323,9 @@ function CustomRBACFunction {
         foreach ($rule in $result) {
             if ($cachedUsers.ContainsKey($rule.principalId)) {
                 $rule.numberOfPrincipals = $cachedUsers[$rule.principalId].number
-                $rule.principalId = $cachedUsers[$rule.principalId].name
                 if ($graphOption.ToLower() -eq "full") {$rule.groupMembers = $cachedUsers[$rule.principalId].groupMembers}
+                # Keep principalId as last item to change as otherwise this breaks the lookup in the hashtable
+                $rule.principalId = $cachedUsers[$rule.principalId].name
             }
             else {
                 try {
