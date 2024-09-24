@@ -10,6 +10,7 @@ if ($inputFile.MicrosoftGraph.enabled){
     Connect-MgGraph -Scopes $inputFile.MicrosoftGraph.scopes
 }else {
     Write-Warning "Microsoft Graph is not enabled, some features may not work as expected"
+    Disconnect-MgGraph
 }
 
 
@@ -24,7 +25,7 @@ foreach ($query in $inputFile.queries) {
 
     if($results){
         if($query.custom){
-            $results = ExecuteCustomScript -resourceType $($query.name) -object $results
+            $results = ExecuteCustomScript -resourceType $query.name -object $results -options $query.customOptions
         }
         OutputCSV -object $results -outputFile $queryOutput
     }else {
@@ -45,7 +46,7 @@ foreach ($resourceType in $inputFile.resourceTypes) {
 
     if($results){
         if($resourceType.custom){
-            $results = ExecuteCustomScript -resourceType $($resourceType.name) -object $results
+            $results = ExecuteCustomScript -resourceType $resourceType.name -object $results -options $resourceType.customOptions
         }
         OutputCSV -object $results -outputFile $queryOutput
     }else {

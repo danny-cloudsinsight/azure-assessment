@@ -29,12 +29,14 @@ function ExecuteCustomScript {
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $resourceType,
         [Parameter(Mandatory = $true, Position = 1)]
-        [pscustomobject] $object
+        [pscustomobject] $object,
+        [Parameter(Mandatory = $false, Position = 2)]
+        [string] $options
     )
 
     switch ($resourceType) {
         "RBAC" {
-            $result = CustomRBACFunction -object $object
+            $result = CustomRBACFunction -object $object -graphOption $options
         }
         "virtualNetworks" { 
             $result = CustomVnetFunction -object $object
@@ -204,7 +206,7 @@ PS> $result = CustomNsgFunction -object $rawResult
 
 .NOTES
 More information on the network interfaces that this NSG is applied to, will be collected using the networkInterfaces.kql query
-More information on the custom security rules that are part of this NSG wuill be collected using the nsgRules.kql query
+More information on the custom security rules that are part of this NSG will be collected using the nsgRules.kql query
 #>
 function CustomNsgFunction {
     param (
@@ -269,11 +271,20 @@ Custom function for the RBAC resources.
 
 .DESCRIPTION
 This function will translate all the Entra ID object IDs in the results to the displayName of the corresponding object.
+Following columns will be adapted principalId, createdBy and updatedBy.
+
+Furthermore for groups, this function will check how many members are in the group and optionally will also provide the name of each member.
 
 All other columns will remain unchanged in the result.
 
 .PARAMETER object
 Resulting object of executing the KQL query for RBAC resources 
+
+.PARAMETER graphOption
+Indicates what level of Microsoft Graph querying will be used:
+- "None": Graph will not be used (this function will not have any effect on the results)
+- "Base": Only number of members in a group will be displayed
+- "Full": Also the actual members will be added
 
 .OUTPUTS
 Outputs the result of the custom function as a PSObject
@@ -288,56 +299,121 @@ For this custom function to work, a Microsoft Graph connection should be active.
 function CustomRBACFunction {
     param (
         [Parameter(Mandatory = $true, Position = 0)]
-        [pscustomobject] $object
+        [pscustomobject] $object,
+        [Parameter(Mandatory = $false, Position = 1)]
+        [string] $graphOption = "None"
     )
     Write-Host "Executing custom function for RBAC"
     $result = $object
 
-    $context = Get-MgContext
-    if ($context) { 
+    switch ($graphOption) {
+        { $_.ToLower() -in "base", "full" } { $context = Get-MgContext }
+        { $_.ToLower() -in "none" } { $context = $null }
+        Default { $context = $null; Write-Warning "Incorrect value for graphOption ($graphOption), assuming 'None'. Correct values are 'None', 'Base', or 'Full'" }
+    }
+    
+    if ($context) {
+        # Add columm for amount of users in role
+        $object | Add-Member -MemberType NoteProperty -Name "numberOfPrincipals" -Value 0
+        if ($graphOption.ToLower() -eq "full") {
+            $object | Add-Member -MemberType NoteProperty -Name "groupMembers" -Value ""
+        }
+
         $cachedUsers = @{}
         foreach ($rule in $result) {
             if ($cachedUsers.ContainsKey($rule.principalId)) {
-                $rule.principalId = $cachedUsers[$rule.principalId]
+                $rule.numberOfPrincipals = $cachedUsers[$rule.principalId].number
+                $rule.principalId = $cachedUsers[$rule.principalId].name
+                if ($graphOption.ToLower() -eq "full") {$rule.groupMembers = $cachedUsers[$rule.principalId].groupMembers}
             }
             else {
                 try {
                     $displayName = (Get-MgDirectoryObject -DirectoryObjectId $rule.principalId -ErrorAction Stop | Select-Object -ExpandProperty AdditionalProperties).displayName
-                    $cachedUsers.Add($rule.principalId, $displayName)
+                    if ($rule.principalType -eq "Group") {
+                        $memberList = Get-MgGroupMember -GroupId $rule.principalId
+                        $number = $memberList.count
+                        $members = ""
+                        if ($graphOption.ToLower() -eq "full") {
+                            foreach ($member in $memberList) {
+                                if ($cachedUsers.ContainsKey($member)) {
+                                    $members += "$($cachedUsers[$member].name), "
+                                }
+                                else {
+                                    try {
+                                        $memberName = (Get-MgDirectoryObject -DirectoryObjectId $member.Id -ErrorAction Stop | Select-Object -ExpandProperty AdditionalProperties).displayName
+                                        $members += "$memberName, "
+                                    }
+                                    catch {
+                                       Write-Warning "Something went wrong when collecting the members of group $displayName"
+                                    }
+                                    
+                                }
+                            }
+                            $members = $members -replace ".{2}$"
+                        }
+                    }
+                    else {
+                        $number = 1
+                        $members = ""
+                    } 
+                    $cachedUsers.Add($rule.principalId, @{'name' = $displayName; 'number' = $number; 'groupMembers' = $members })
                     $rule.principalId = $displayName
+                    $rule.numberOfPrincipals = $number
+                    if ($graphOption.ToLower() -eq "full") {
+                        $rule.groupMembers = $members
+                    }
                 }
                 catch {
-                    Write-Warning "Object with id $($rule.principalId) not found"
                     $displayName = "User not found ($($rule.principalId))"
-                    $cachedUsers.Add($rule.principalId, $displayName)
+                    $number = 0
+                    $cachedUsers.Add($rule.principalId, @{'name' = $displayName; 'number' = $number })
                     $rule.principalId = $displayName
+                    $rule.numberOfPrincipals = $number
                 }
             }
             
             if ($rule.createdBy) {
                 if ($cachedUsers.ContainsKey($rule.createdBy)) {
-                    $rule.createdBy = $cachedUsers[$rule.createdBy]
+                    $rule.createdBy = $cachedUsers[$rule.createdBy].name
                 }
                 else {
-                    $createdByName = (Get-MgDirectoryObject -DirectoryObjectId $rule.createdBy | Select-Object -ExpandProperty AdditionalProperties).displayName
-                    $cachedUsers.Add($rule.createdBy, $createdByName)
-                    $rule.createdBy = $createdByName
+                    try {
+                        $createdByName = (Get-MgDirectoryObject -DirectoryObjectId $rule.createdBy -ErrorAction Stop | Select-Object -ExpandProperty AdditionalProperties).displayName
+                        $cachedUsers.Add($rule.createdBy, @{'name' = $createdByName; 'number' = 1 })
+                        $rule.createdBy = $createdByName    
+                    }
+                    catch {
+                        $createdByName = "User not found ($($rule.createdBy))"
+                        $number = 0
+                        $cachedUsers.Add($rule.createdBy, @{'name' = $displayName; 'number' = $number })
+                        $rule.createdBy = $displayName
+                        $rule.numberOfPrincipals = $number
+                    }
                 }
             }
             if ($rule.updatedBy) {
                 if ($cachedUsers.ContainsKey($rule.updatedBy)) {
-                    $rule.updatedBy = $cachedUsers[$rule.updatedBy]
+                    $rule.updatedBy = $cachedUsers[$rule.updatedBy].name
                 }
                 else {
-                    $updatedByName = (Get-MgDirectoryObject -DirectoryObjectId $rule.createdBy | Select-Object -ExpandProperty AdditionalProperties).displayName
-                    $cachedUsers.Add($rule.createdBy, $updatedByName)
-                    $rule.updatedBy = $updatedByName
+                    try {
+                        $updatedByName = (Get-MgDirectoryObject -DirectoryObjectId $rule.updatedBy -ErrorAction Stop | Select-Object -ExpandProperty AdditionalProperties).displayName
+                        $cachedUsers.Add($rule.updatedBy, @{'name' = $updatedByName; 'number' = 1 })
+                        $rule.updatedBy = $updatedByName    
+                    }
+                    catch {
+                        $updatedByName = "User not found ($($rule.createdBy))"
+                        $number = 0
+                        $cachedUsers.Add($rule.updatedBy, @{'name' = $displayName; 'number' = $number })
+                        $rule.updatedBy = $displayName
+                        $rule.numberOfPrincipals = $number
+                    }
                 }
             }
         }
     }
     else { 
-        Write-Warning "No connection to Microsoft Graph. IDs will not be translated" 
+        Write-Warning "No connection to Microsoft Graph (or -graphOption = 'None'). IDs will not be translated" 
     }
     
     return $result

@@ -14,7 +14,8 @@
   - virtualNetworks
   - virtualMachines
   - networkSecurityGroups
-- Translated Entra ID object IDs to names (in RBAC query)
+- Translated Entra ID object IDs to names in RBAC query
+- Added option to get group members of all groups in RBAC query
 - Added description to all Powershell functions
 
 # Version 0.1

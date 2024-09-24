@@ -27,7 +27,8 @@
         },
         {
             "name": "RBAC",
-            "custom": true
+            "custom": true,
+            "customOptions": "Full"
         }
     ],
     "resourceTypes": [
