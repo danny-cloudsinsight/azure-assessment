@@ -5,8 +5,10 @@ policyresources
     assignmentDisplayName = properties.displayName,
     assignmentDescription = properties.description,
     scopeType = split(properties.scope, "/")[-2],
-    scope = split(properties.scope, "/")[-1]
+    scopeName = split(properties.scope, "/")[-1],
+    scope = tostring(properties.scope)
 | join kind=leftouter(policyresources | where type in ("microsoft.authorization/policydefinitions", "microsoft.authorization/policysetdefinitions")) on $left.policyDefinitionId == $right.id
+| join kind=leftouter resourcecontainers on $left.scope == $right.id
 | project
     name,
     policyDefinitionId,
@@ -15,7 +17,7 @@ policyresources
     assignmentDisplayName,
     assignmentDescription,
     scopeType,
-    scope,
+    scopeName = iff(isnotnull(properties2.displayName), properties2.displayName, name2),
     location,
-    fullProperties = tostring(properties),
-    identity = tostring(identity)
+    identity = tostring(identity),
+    fullProperties = tostring(properties)

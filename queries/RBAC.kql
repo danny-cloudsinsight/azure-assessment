@@ -1,24 +1,27 @@
 authorizationresources
 | where type == "microsoft.authorization/roleassignments"
 | extend
-    scope = iff(properties.scope == "/", "root", split(properties.scope,"/")[-1]),
     scopeType =  case (properties.scope =="/", "managementGroups",
                         properties.scope startswith("/providers/Microsoft.Management/"), "managementGroups",
-                        properties.scope startswith("/providers/Microsoft.Subscription/aliases"), "subscriptions",
+                        properties.scope startswith("/providers/Microsoft.Subscription/aliases"), "aliases",
                         properties.scope contains("/providers/"), strcat_array(array_slice(split(split(properties.scope,"/providers")[-1],"/"),0,(array_length(split(split(properties.scope,"/providers")[-1],"/"))-2)), "/"),
                         properties.scope contains("/resourceGroups/"), "resourceGroups",
                         "subscriptions" ),
-    id = tostring(properties.roleDefinitionId)
+    id = tostring(properties.roleDefinitionId),
+    scope = tostring(properties.scope)
 | join kind=leftouter(
     authorizationresources
     | where type == "microsoft.authorization/roledefinitions"
 ) on id
+| join kind=leftouter resourcecontainers on $left.scope == $right.id
 | extend
     roleName = properties1.roleName,
-    creationProperties = pack("createdOn", properties.createdOn, "updatedOn", properties.updatedOn, "createdBy", properties.createdBy, "updatedBy", properties.updatedBy)
+    scopeName = case (properties.scope == "/", "root", 
+                        scopeType in ("managementGroups", "subscriptions"), iff(isnotnull(properties2.displayName), properties2.displayName, name2),
+                        split(properties.scope,"/")[-1])
 | project
     scopeType,
-    scope,
+    scopeName,
     roleName,
     principalType = properties.principalType,
     principalId = properties.principalId,
