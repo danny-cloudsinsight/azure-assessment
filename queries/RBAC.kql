@@ -15,11 +15,14 @@ authorizationresources
 ) on id
 | extend
     roleName = properties1.roleName,
-    creationProperties = tostring(pack("createdOn", properties.createdOn, "updatedOn", properties.updatedOn, "createdBy", properties.createdBy, "updatedBy", properties.updatedBy))
+    creationProperties = pack("createdOn", properties.createdOn, "updatedOn", properties.updatedOn, "createdBy", properties.createdBy, "updatedBy", properties.updatedBy)
 | project
     scopeType,
     scope,
     roleName,
-    principalType= properties.principalType,
-    principalId= properties.principalId,
-    creationProperties
+    principalType = properties.principalType,
+    principalId = properties.principalId,
+    createdOn = format_datetime(todatetime(properties.createdOn), "dd/MM/yyyy hh:mm:ss"),
+    createdBy = properties.createdBy,
+    updatedOn = format_datetime(todatetime(properties.updatedOn), "dd/MM/yyyy hh:mm:ss"),
+    updatedBy = properties.updatedBy

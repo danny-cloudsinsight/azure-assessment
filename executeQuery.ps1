@@ -5,6 +5,14 @@ Import-Module ./modules/customScripts.psm1 -Force
 
 $inputFile = (get-content "./config.json" | ConvertFrom-Json)
 
+Write-Host "Connecting to Microsoft Graph (Optional)"
+if ($inputFile.MicrosoftGraph.enabled){
+    Connect-MgGraph -Scopes $inputFile.MicrosoftGraph.scopes
+}else {
+    Write-Warning "Microsoft Graph is not enabled, some features may not work as expected"
+    Disconnect-MgGraph
+}
+
 
 Write-Host "Collecting base information."
 
@@ -16,6 +24,9 @@ foreach ($query in $inputFile.queries) {
     $results = ExecuteQuery -inputFile $queryInput
 
     if($results){
+        if($query.custom){
+            $results = ExecuteCustomScript -resourceType $query.name -object $results -options $query.customOptions
+        }
         OutputCSV -object $results -outputFile $queryOutput
     }else {
         Write-Warning "Results object does not exist!"
@@ -35,7 +46,7 @@ foreach ($resourceType in $inputFile.resourceTypes) {
 
     if($results){
         if($resourceType.custom){
-            $results = ExecuteCustomScript -resourceType $($resourceType.name) -object $results
+            $results = ExecuteCustomScript -resourceType $resourceType.name -object $results -options $resourceType.customOptions
         }
         OutputCSV -object $results -outputFile $queryOutput
     }else {
