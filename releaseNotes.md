@@ -17,6 +17,7 @@
 - Translated Entra ID object IDs to names in RBAC query
 - Added option to get group members of all groups in RBAC query
 - Added description to all Powershell functions
+- Translated management group and subscription ID to name in azure policy and RBAC queries
 
 # Version 0.1
 
