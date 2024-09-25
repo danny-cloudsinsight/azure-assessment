@@ -104,7 +104,7 @@ function ExecuteQueryRest {
     $uri = "https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2022-10-01"
     $token = (Get-AzAccessToken).Token
     $headers = @{
-        "Content-Type" = "application/json"
+        "Content-Type"  = "application/json"
         "Authorization" = "Bearer $token"
     }
     $escapedQueryContent = $queryContent -replace '"', '\"'
@@ -165,4 +165,70 @@ function OutputCSV {
         Write-Warning "Could not write output. Make sure the path for the output file ($outputFile) exists."
         continue
     }
+}
+
+<#
+.SYNOPSIS
+Turns a CSV file into a Markdown table
+
+.DESCRIPTION
+Turns a CSV file into a Markdown (.md) file containing a table with all the columns and rows from the csv file.
+First line of the csv file will be used as header for the different table columns
+
+.PARAMETER inputCSV
+Path to the input CSV file
+
+.PARAMETER outputFile
+Optional location for the markdown file. By default will be in same location as CSV file, but with .md extension
+
+.PARAMETER delimiter
+Optional delimiter used in csv file. By default ';' will be used as delimiter
+
+.EXAMPLE
+PS> $processes = Get-Process
+PS> OutputCSV -object $processes -outputFile "./processes.csv"
+PS> ConvertCSVtoMD -inputCSV "./processes.csv" -outputFile "./processesTable.md" -delimiter ";"
+
+.NOTES
+- If you want to output the markdown file to a different folder, this folder needs to exist.
+- New lines in cells in csv should be indicated using "<br>" and not with the newline character.
+#>
+function ConvertCSVtoMD {
+    param
+    (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string] $inputCSV,
+        [Parameter(Mandatory = $false, Position = 1)]
+        [string] $outputFile,
+        [Parameter(Mandatory = $false, Position = 2)]
+        [string] $delimiter = ";"
+    )
+    
+    if (!$PSBoundParameters.ContainsKey('outputFile')) {
+        $outputFile = $inputCSV.Substring(0, $inputCSV.LastIndexOf(".")) + ".md"
+    }
+
+    $mdData = ""
+
+    $rawData = Get-Content -Path $inputCSV
+
+    #Read the first line to create the headers
+    $rawHeaders = $rawData | Select-Object -First 1
+    $numberOfHeaders = ($rawHeaders.split($delimiter)).count
+    $mdData = "|$($rawHeaders.Replace($delimiter,'|'))|`n"
+
+    foreach ($i in 1..$numberOfHeaders) {
+        $mdData += "|---"
+    }
+    $mdData += "|`n"
+
+    #Remove the first line
+    $rawData = $rawData | Select-Object -Skip 1
+
+    foreach ($line in $rawData) {
+        $mdData += "|$($line.Replace($delimiter,'|'))|`n"
+    }
+
+    $mdData | Out-File -Append $outPutFile
+
 }
