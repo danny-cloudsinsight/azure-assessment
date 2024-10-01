@@ -4,3 +4,6 @@ results/*.zip
 
 #Ignore Apple system file
 .DS_Store
+
+#Ignore _draft folder
+_draft/**
