@@ -1,3 +1,11 @@
+# Version 0.3
+
+- Added inventory of following Entra ID components
+  - Enterprise Applications
+  - Managed Identities
+  - Entra Director Role members
+  - General Tenant information
+
 # Version 0.2
 
 - Increased max. number of results per query from 100 to 1000
