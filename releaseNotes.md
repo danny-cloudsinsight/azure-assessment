@@ -1,8 +1,10 @@
 # Version 0.3
 
-- Added inventory for following Entra ID components
+- Added inventory of following Entra ID components
   - Enterprise Applications
   - Managed Identities
+  - Entra Director Role members
+  - General Tenant information
 
 # Version 0.2
 

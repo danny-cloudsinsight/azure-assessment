@@ -18,11 +18,11 @@
             },
             {
                 "name": "directoryRoles",
-                "enabled": true
+                "enabled": false
             },
             {
                 "name": "generalInfo",
-                "enabled": false
+                "enabled": true
             },
             {
                 "name": "conditionalAccess",

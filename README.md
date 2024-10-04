@@ -4,6 +4,7 @@
 
 - Powershell module **Az.ResourceGraph**
 - Azure **Reader** role on the tenant Management Group level to collect information on the entire environment
+- **Directory.Read.All** Graph permissions for executing the different Entra ID related functions
 
 ## Steps
 

@@ -253,6 +253,8 @@ Function that triggers the correct MS Graph function
 
 .DESCRIPTION
 Triggers the correct MS Graph function for the component that is provided as the first parameter.
+The following permission is sufficient to run all current Graph functions:
+- Directory.Read.All
  
 .PARAMETER component
 Component to execute the MS Graph function for
@@ -288,6 +290,9 @@ function ExecuteMsGraphFunction {
         }
         "directoryRoles" {
             $result = graphDirectoryRolesFunction
+        }
+        "generalInfo" {
+            $result = graphGeneralInfoFunction
         }
         Default {
             Write-Warning "No MS Graph function defined for component $component"
@@ -550,7 +555,7 @@ function graphDirectoryRolesFunction {
         Write-Host "Gathering info on Directory Roles"
         $result = [System.Collections.ArrayList]::new()
 
-        $directoryRoles = Get-MgDirectoryRole -ExpandProperty Members
+        $directoryRoles = Get-MgDirectoryRole -ExpandProperty Members -Property DisplayName,Members
 
         $cachedUsers = @{}
         foreach ($role in $directoryRoles) {
@@ -560,7 +565,6 @@ function graphDirectoryRolesFunction {
             foreach ($memberId in $role.Members.Id) {
                 if ($cachedUsers.ContainsKey($memberId)) {
                     $members += "$($cachedUsers[$memberId]), "
-                    Write-Host "Added $($cachedUsers[$memberId]) from the cache"
                     $amount += 1
                 }
                 else {
@@ -587,6 +591,91 @@ function graphDirectoryRolesFunction {
                 Members         = $members
             }
             [void]$result.Add($tempObject)
+        }
+    }
+    else {
+        Write-Warning "No connection to Microsoft Graph. Cannot execute the directoryRoles inventory."
+        $result = $null
+    }
+    
+    $result
+}
+
+<#
+.SYNOPSIS
+Function to gather general information regarding the Entra Tenant
+
+.DESCRIPTION
+Following Microsoft Graph scopes are required for running this script:
+- Directory.Read.All
+
+This function will gather the following information on Entra Id
+- Tenant name
+- Tenant ID
+- domains
+
+.OUTPUTS
+Outputs the results as a PSObject
+
+.EXAMPLE
+PS> Connect-MgGraph -scopes "Directory.Read.All"
+PS> $result = graphGeneralInfoFunction
+
+.NOTES
+The session needs to be connected to Microsoft Graph before running this script.
+#>
+function graphGeneralInfoFunction {
+    
+    $context = Get-MgContext
+
+    if ($context) {
+        Write-Host "Gathering info on Entra Tenant"
+        $info = [ordered]@{}
+
+        # Organization
+        $organization = Get-MgOrganization -Property DisplayName,Id
+        $info.Add("Name", $organization.DisplayName)
+        $info.Add("Id", $organization.Id)
+
+        # Domains
+        $domains = Get-MgDomain -Property Id,IsDefault,IsVerified
+        $defaultDomain = ""
+        $verifiedDomains = ""
+        $otherDomains = ""
+        foreach ($domain in $domains) {
+            if($domain.IsDefault){
+                $defaultDomain = $domain.Id
+            }elseif($domain.IsVerified){
+                $verifiedDomains += "$($domain.Id), "
+            }else{
+                $otherDomains += "$($domain.Id), "
+            }
+        }
+        if($verifiedDomains -ne ""){
+            $verifiedDomains = $verifiedDomains -replace ".{2}$"
+        }
+        if($otherDomains -ne ""){
+            $otherDomains = $otherDomains -replace ".{2}$"
+        }
+        $info.Add("Default domain", $defaultDomain)
+        $info.Add("Verified domains", $verifiedDomains)
+        $info.Add("Other domains", $otherDomains)
+        
+        #License
+        $sku = ((Get-MgSubscribedSku).ServicePlans | Where-Object { $_.ServicePlanName -Like 'AAD_PREMIUM*' }).ServicePlanName
+        if($sku -contains "AAD_PREMIUM_P2"){
+            $info.Add("License", "Microsoft Entra ID P2")
+        }elseif ($sku -contains "AAD_PREMIUM") {
+            $info.Add("License", "Microsoft Entra ID P1")
+        }else {
+            $info.Add("License", "Unknown")
+        }
+
+        $result = foreach ($key in $info.Keys) {
+           [PSCustomObject]@{
+            Item = $key
+            Value = $info[$key]
+           }
         }
     }
     else {
