@@ -286,6 +286,9 @@ function ExecuteMsGraphFunction {
         "managedIdentities" {
             $result = graphManagedIdentitiesFunction
         }
+        "directoryRoles" {
+            $result = graphDirectoryRolesFunction
+        }
         Default {
             Write-Warning "No MS Graph function defined for component $component"
         }
@@ -511,6 +514,83 @@ function graphManagedIdentitiesFunction {
     }
     else {
         Write-Warning "No connection to Microsoft Graph. Cannot execute the managedIdentity inventory."
+        $result = $null
+    }
+    
+    $result
+}
+
+<#
+.SYNOPSIS
+Function to gather information on Entra ID roles and their members
+
+.DESCRIPTION
+Following Microsoft Graph scopes are required for running this script:
+- RoleManagement.Read.Directory
+
+This function will gather the following information on all the Entra ID roles
+- Display Name
+- Members
+
+.OUTPUTS
+Outputs the results as a PSObject
+
+.EXAMPLE
+PS> Connect-MgGraph -scopes "RoleManagement.Read.Directory"
+PS> $result = graphDirectoryRolesFunction
+
+.NOTES
+The session needs to be connected to Microsoft Graph before running this script.
+#>
+function graphDirectoryRolesFunction {
+    
+    $context = Get-MgContext
+
+    if ($context) {
+        Write-Host "Gathering info on Directory Roles"
+        $result = [System.Collections.ArrayList]::new()
+
+        $directoryRoles = Get-MgDirectoryRole -ExpandProperty Members
+
+        $cachedUsers = @{}
+        foreach ($role in $directoryRoles) {
+            # Lookup Display names of members
+            $members = ""
+            $amount = 0
+            foreach ($memberId in $role.Members.Id) {
+                if ($cachedUsers.ContainsKey($memberId)) {
+                    $members += "$($cachedUsers[$memberId]), "
+                    Write-Host "Added $($cachedUsers[$memberId]) from the cache"
+                    $amount += 1
+                }
+                else {
+                    try {
+                        $memberName = (Get-MgDirectoryObject -DirectoryObjectId $memberId -ErrorAction Stop | Select-Object -ExpandProperty AdditionalProperties).displayName
+                        $members += "$memberName, "
+                        $amount += 1
+                    }
+                    catch {
+                        Write-Warning "Something went wrong when collecting the members of group $displayName"
+                    }
+                    $cachedUsers.Add($memberId, $memberName)
+                }
+            }
+            if ($members -ne "") {
+                $members = $members -replace ".{2}$"
+            }
+
+            
+            # Create application custom object to add to array
+            $tempObject = [PSCustomObject]@{
+                DisplayName     = $role.DisplayName
+                NumberOfMembers = $amount
+                Members         = $members
+            }
+            [void]$result.Add($tempObject)
+        }
+    }
+    else {
+        Write-Warning "No connection to Microsoft Graph. Cannot execute the directoryRoles inventory."
         $result = $null
     }
     
