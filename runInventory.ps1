@@ -56,3 +56,20 @@ foreach ($resourceType in $inputFile.resourceTypes) {
     Clear-Variable results
 
 }
+
+# Collect Entra ID inventory
+if($inputFile.MicrosoftGraph.enabled){
+    foreach ($component in $inputFile.MicrosoftGraph.inventory) {
+        if ($component.enabled) {
+            $results = ExecuteMsGraphFunction -component $component.name -options $component.customOptions
+            if ($results) {
+                $outputFile = "./results/entra-$($component.name).csv"
+                OutputCSV -object $results -outputFile $outputFile
+            }else {
+                Write-Warning "No results for $($component.name)"
+            }
+        }
+    }
+}else {
+    Write-Warning "No Entra ID inventory will be collected as Microsoft Graph is not enabled"
+}

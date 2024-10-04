@@ -232,3 +232,244 @@ function ConvertCSVtoMD {
     $mdData | Out-File -Append $outPutFile
 
 }
+
+<#
+.SYNOPSIS
+Function that triggers the correct MS Graph function
+
+.DESCRIPTION
+Triggers the correct MS Graph function for the component that is provided as the first parameter.
+ 
+.PARAMETER component
+Component to execute the MS Graph function for
+
+.PARAMETER options
+Custom options for the MS Graph function
+
+.OUTPUTS
+Outputs the result of the MS Graph function as a PSObject
+
+.EXAMPLE
+PS> $result = ExecuteMsGraphScript -component "enterpriseApps"
+
+.NOTES
+If no MS Graph function exists for a specific resource type this function returns a warning
+#>
+function ExecuteMsGraphFunction {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string] $component,
+        [Parameter(Mandatory = $false, Position = 1)]
+        [string] $options = ""
+    )
+
+    $result = $null
+
+    switch ($component) {
+        "enterpriseApps" {
+            $result = graphEnterpriseAppsFunction -options "$options"
+        }
+        "managedIdentities" {
+            $result = graphManagedIdentitiesFunction
+        }
+        Default {
+            Write-Warning "No MS Graph function defined for component $component"
+        }
+    }
+
+    $result
+}
+
+<#
+.SYNOPSIS
+Function to gather information on existing enterprise apps.
+
+.DESCRIPTION
+Following Microsoft Graph scopes are required for running this script:
+- Application.Read.All
+
+This function will gather the following information on the enterprise apps that exist in the Entra ID tenant
+- Display Name
+- AppId
+- Description
+- Secrets and their expiry date
+- Expired and soon expiring secrets
+- Federated Credentials
+- App Roles
+- Creation Date
+- Owners
+- Sign-in Audience
+
+.PARAMETER options
+Custom options for the enterprise apps function. Should be provided as a string containing key=value pairs separated by ;.
+Possible key values:
+- secretExpiryWarningDays: number of days before end date of secret that it is put in expiring state. Default is 30 days.
+
+.OUTPUTS
+Outputs the results as a PSObject
+
+.EXAMPLE
+PS> Connect-MgGraph -scopes "Application.Read.All"
+PS> $result = graphEnterpriseAppsFunction -options "secretExpiryWarningDays=30"
+
+.NOTES
+The session needs to be connected to Microsoft Graph before running this script.
+#>
+function graphEnterpriseAppsFunction {
+    [Parameter(Mandatory = $false, Position = 0)]
+    [string] $options = ""
+
+    $optionValues = ConvertFrom-StringData -StringData ($options.Replace(";", "`n"))
+
+
+    if ($optionValues.ContainsKey("secretExpiryWarningDays")) {
+        $secretExpiryWarningDays = $optionValues.secretExpiryWarningDays
+        Write-Host "Custom value for secretExpiryWarningDays: $secretExpiryWarningDays"
+    }
+    else {
+        $secretExpiryWarningDays = 30
+    }
+    
+    $context = Get-MgContext
+    $currentDate = Get-Date
+    $expiryWarningDate = (Get-Date).AddDays($secretExpiryWarningDays)
+
+    if ($context) {
+        Write-Host "Gathering info on enterprise apps."
+        $result = [System.Collections.ArrayList]::new()
+        $requiredProperties = "AppId, DisplayName, Description, PasswordCredentials, FederatedIdentityCredentials, AppRoles, CreatedDateTime, Owners, SignInAudience"
+        $applicationList = Get-MgApplication -ExpandProperty FederatedIdentityCredentials -Property $requiredProperties
+        foreach ($application in $applicationList) {
+            # Create calculated members for application
+            ## PassWordCredentials
+            $tempPasswordString = ""
+            $expiryStatus = "None"
+            foreach ($password in $application.PasswordCredentials) {
+                if ($password.DisplayName) {
+                    $tempPasswordString += $password.DisplayName
+                }
+                else {
+                    $tempPasswordString += "<no DisplayName>"
+                }
+                $tempPasswordString += " ($($password.EndDateTime.ToString("dd MMM yyyy hh:mm")))"
+                # Calculate correct status in case of multiple secrets
+                if ($password.EndDateTime -gt $expiryWarningDate) {
+                    $expiryStatus = "OK"
+                }elseif ($password.EndDateTime -gt $currentDate) {
+                    $tempPasswordString += " (EXPIRING)"
+                    if ($expiryStatus -ne "OK"){ 
+                        $expiryStatus = "Expiring"
+                    }
+                }else {
+                    $tempPasswordString += " (EXPIRED)"
+                    if ($expiryStatus -eq "None"){
+                        $expiryStatus = "Expired"
+                    }
+                }
+                $tempPasswordString += " | "
+            }
+            if ($tempPasswordString -ne "") {
+                $tempPasswordString = $tempPasswordString -replace ".{3}$"
+            }
+
+            ## FederatedCredentials
+            $tempFederatedCredentials = ""
+            foreach ($credential in $application.FederatedIdentityCredentials) {
+                $tempFederatedCredentials += "Name: $($credential.name), "
+                $tempFederatedCredentials += "Issuer: $($credential.Issuer), "
+                $tempFederatedCredentials += "Subject: $($credential.Subject) | "
+            }
+            if ($tempFederatedCredentials -ne "") {
+                $tempFederatedCredentials = $tempFederatedCredentials -replace ".{3}$"
+            }
+
+            ## AppRoles
+            $tempAppRoles = ""
+            foreach ($role in $application.AppRoles) {
+                $tempAppRoles += "$($role.DisplayName) | "
+            }
+            if ($tempAppRoles -ne "") {
+                $tempAppRoles = $tempAppRoles -replace ".{3}$"
+            }
+
+
+            # Create application custom object to add to array
+            $tempObject = [PSCustomObject]@{
+                DisplayName          = $application.DisplayName
+                AppId                = $application.AppId
+                Description          = $application.Description
+                PasswordCredentials  = $tempPasswordString
+                ExpiryStatus         = $expiryStatus
+                FederatedCredentials = $tempFederatedCredentials
+                AppRoles             = $tempAppRoles
+                CreatedDateTime      = ($application.CreatedDateTime).ToString("dd MMM yyyy hh:mm")
+                Owners               = $application.Owners
+                SignInAudience       = $application.SignInAudience
+            }
+            [void]$result.Add($tempObject)
+        }
+    }
+    else {
+        Write-Warning "No connection to Microsoft Graph. Cannot execute the enterpriseApps inventory."
+        $result = $null
+    }
+    
+    return $result
+}
+
+<#
+.SYNOPSIS
+Function to gather information on existing enterprise apps.
+
+.DESCRIPTION
+Following Microsoft Graph scopes are required for running this script:
+- Application.Read.All
+
+This function will gather the following information on the managed identities that exist in the Entra ID tenant
+- Display Name
+- AppId
+- Description
+- Creation Date
+- Owners
+- Resource
+
+.OUTPUTS
+Outputs the results as a PSObject
+
+.EXAMPLE
+PS> Connect-MgGraph -scopes "Application.Read.All"
+PS> $result = graphManagedIdentitiesFunction
+
+.NOTES
+The session needs to be connected to Microsoft Graph before running this script.
+#>
+function graphManagedIdentitiesFunction {
+    
+    $context = Get-MgContext
+
+    if ($context) {
+        Write-Host "Gathering info on managed identities."
+        $result = [System.Collections.ArrayList]::new()
+        $requiredProperties = "DisplayName, AppId, Description, Owners, AlternativeNames, createdDateTime"
+        $managedIdentityList = Get-MgServicePrincipal -filter "ServicePrincipalType eq 'ManagedIdentity'" -Property $requiredProperties
+        foreach ($identity in $managedIdentityList) {
+            [datetime]$createdDate = $identity.AdditionalProperties.createdDateTime
+            # Create application custom object to add to array
+            $tempObject = [PSCustomObject]@{
+                DisplayName             = $identity.DisplayName
+                AppId                   = $identity.AppId
+                Description             = $identity.Description
+                CreatedDateTime         = $createdDate.ToString("dd MMM yyyy hh:mm")
+                Owners                  = $identity.Owners
+                Resource                = $identity.AlternativeNames[1]
+            }
+            [void]$result.Add($tempObject)
+        }
+    }
+    else {
+        Write-Warning "No connection to Microsoft Graph. Cannot execute the managedIdentity inventory."
+        $result = $null
+    }
+    
+    $result
+}

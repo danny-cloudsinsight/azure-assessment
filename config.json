@@ -1,83 +1,47 @@
 {
     "MicrosoftGraph": {
         "enabled": true,
-        "scopes": "Directory.Read.All"
+        "scopes": "Directory.Read.All",
+        "inventory": [
+            {
+                "name": "enterpriseApps",
+                "enabled": true,
+                "customOptions": "secretExpiryWarningDays=365;test=1"
+            },
+            {
+                "name": "managedIdentities",
+                "enabled": true
+            },
+            {
+                "name": "groups",
+                "enabled": false
+            },
+            {
+                "name": "directoryRoles",
+                "enabled": false
+            },
+            {
+                "name": "generalInfo",
+                "enabled": false
+            },
+            {
+                "name": "conditionalAccess",
+                "enabled": false
+            },
+            {
+                "name": "MFA",
+                "enabled": false
+            },
+            {
+                "name": "users",
+                "enabled": false
+            }
+        ]
     },
     "queries": [
-        {
-            "name": "resource-organization"
-        },
-        {
-            "name": "resources-overview"
-        },
-        {
-            "name": "resources-full-raw"
-        },
-        {
-            "name": "azure-policy"
-        },
-        {
-            "name": "advisor-recommendations"
-        },
-        {
-            "name": "compliance-recommendations"
-        },
-        {
-            "name": "security-recommendations"
-        },
-        {
-            "name": "RBAC",
-            "custom": true,
-            "customOptions": "Full"
-        }
+        
     ],
     "resourceTypes": [
-        {
-            "name": "storageAccounts",
-            "type": "microsoft.storage/storageaccounts"
-        },
-        {
-            "name": "virtualNetworks",
-            "type": "microsoft.network/virtualnetworks",
-            "custom": true
-        },
-        {
-            "name": "vnetPeerings",
-            "type": "microsoft.network/virtualnetworks"
-        },
-        {
-            "name": "virtualMachines",
-            "type": "microsoft.compute/virtualmachines",
-            "custom": true
-        },
-        {
-            "name": "networkInterfaces",
-            "type": "microsoft.network/networkinterfaces"
-        },
-        {
-            "name": "publicIpAddresses",
-            "type": "microsoft.network/publicipaddresses"
-        },
-        {
-            "name": "networkSecurityGroups",
-            "type": "microsoft.network/networksecuritygroups",
-            "custom": true
-        },
-        {
-            "name": "nsgRules",
-            "type": "Microsoft.Network/networkSecurityGroups/securityRules"
-        },
-        {
-            "name": "disks",
-            "type": "microsoft.compute/disks"
-        },
-        {
-            "name": "keyVaults",
-            "type": "microsoft.keyvault/vaults"
-        },
-        {
-            "name": "missingTypes",
-            "type": ""
-        }
+        
     ]
 }
