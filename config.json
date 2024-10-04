@@ -35,6 +35,10 @@
             {
                 "name": "users",
                 "enabled": false
+            },
+            {
+                "name": "graphPermissions",
+                "enabled": false
             }
         ]
     },

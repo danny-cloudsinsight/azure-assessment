@@ -12,6 +12,10 @@ The script will issue an error when something else goes wrong with the file
 .PARAMETER inputFile
 Location of the file containing the valid KQL to execute
 
+.PARAMETER parameters
+Parameters to use for the query. Should be provided as a string containing parameter=value pairs separated by ;.
+In the kql file these parameters should be put with the following syntax %PARAMETER%
+
 .OUTPUTS
 Outputs the result of the KQL query as a PSObject
 
@@ -26,7 +30,10 @@ function ExecuteQuery {
     param
     (
         [Parameter(Mandatory = $true, Position = 0)]
-        [string] $inputFile
+        [string] $inputFile,
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string] $parameters
+
     )
 
     try {
@@ -40,6 +47,13 @@ function ExecuteQuery {
     catch {
         Write-Warning "An uncatched error has occurred. Please investigate"
         Write-Error $error[0]
+    }
+
+    # Replace parameters with their value in the query
+    $parameterValues = ConvertFrom-StringData -StringData ($parameters.Replace(";", "`n"))
+
+    $parameterValues.GetEnumerator() | ForEach-Object {
+        $queryContent = $queryContent.Replace("%$($_.Key.ToUpper())%", $_.Value)
     }
 
     try {
@@ -355,14 +369,16 @@ function graphEnterpriseAppsFunction {
                 # Calculate correct status in case of multiple secrets
                 if ($password.EndDateTime -gt $expiryWarningDate) {
                     $expiryStatus = "OK"
-                }elseif ($password.EndDateTime -gt $currentDate) {
+                }
+                elseif ($password.EndDateTime -gt $currentDate) {
                     $tempPasswordString += " (EXPIRING)"
-                    if ($expiryStatus -ne "OK"){ 
+                    if ($expiryStatus -ne "OK") { 
                         $expiryStatus = "Expiring"
                     }
-                }else {
+                }
+                else {
                     $tempPasswordString += " (EXPIRED)"
-                    if ($expiryStatus -eq "None"){
+                    if ($expiryStatus -eq "None") {
                         $expiryStatus = "Expired"
                     }
                 }
@@ -392,6 +408,18 @@ function graphEnterpriseAppsFunction {
                 $tempAppRoles = $tempAppRoles -replace ".{3}$"
             }
 
+            ## RBAC roles
+            $servicePrincipalId = (Get-MgServicePrincipal -Filter "AppId eq `'$($application.AppId)`'").Id
+            $queryResults = ExecuteQuery -inputFile "queries/entra/RBACforEntraId.kql" -parameters "ID=$servicePrincipalId"
+            $roles = ""
+            foreach ($role in $queryResults) {
+                $roles += "role: $($role.roleName), scope: $($role.scopeName), type: $($role.scopeType) | "
+            }
+            if ($roles -ne "") {
+                $roles = $roles -replace ".{3}$"
+            }
+  
+
 
             # Create application custom object to add to array
             $tempObject = [PSCustomObject]@{
@@ -405,6 +433,7 @@ function graphEnterpriseAppsFunction {
                 CreatedDateTime      = ($application.CreatedDateTime).ToString("dd MMM yyyy hh:mm")
                 Owners               = $application.Owners
                 SignInAudience       = $application.SignInAudience
+                Roles                = $roles
             }
             [void]$result.Add($tempObject)
         }
@@ -450,18 +479,32 @@ function graphManagedIdentitiesFunction {
     if ($context) {
         Write-Host "Gathering info on managed identities."
         $result = [System.Collections.ArrayList]::new()
-        $requiredProperties = "DisplayName, AppId, Description, Owners, AlternativeNames, createdDateTime"
+        $requiredProperties = "Id, DisplayName, AppId, Description, Owners, AlternativeNames, createdDateTime"
         $managedIdentityList = Get-MgServicePrincipal -filter "ServicePrincipalType eq 'ManagedIdentity'" -Property $requiredProperties
         foreach ($identity in $managedIdentityList) {
+            # Create calculated members for managed identity
+            ## RBAC roles
+            $queryResults = ExecuteQuery -inputFile "queries/entra/RBACforEntraId.kql" -parameters "ID=$($identity.Id)"
+            $roles = ""
+            foreach ($role in $queryResults) {
+                $roles += "role: $($role.roleName), scope: $($role.scopeName), type: $($role.scopeType) | "
+            }
+            if ($roles -ne "") {
+                $roles = $roles -replace ".{3}$"
+            }
+
+            # Created Date
             [datetime]$createdDate = $identity.AdditionalProperties.createdDateTime
+            
             # Create application custom object to add to array
             $tempObject = [PSCustomObject]@{
-                DisplayName             = $identity.DisplayName
-                AppId                   = $identity.AppId
-                Description             = $identity.Description
-                CreatedDateTime         = $createdDate.ToString("dd MMM yyyy hh:mm")
-                Owners                  = $identity.Owners
-                Resource                = $identity.AlternativeNames[1]
+                DisplayName     = $identity.DisplayName
+                AppId           = $identity.AppId
+                Description     = $identity.Description
+                CreatedDateTime = $createdDate.ToString("dd MMM yyyy hh:mm")
+                Owners          = $identity.Owners
+                Resource        = $identity.AlternativeNames[1]
+                Roles           = $roles
             }
             [void]$result.Add($tempObject)
         }
