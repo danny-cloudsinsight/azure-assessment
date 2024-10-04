@@ -31,7 +31,7 @@ function ExecuteQuery {
     (
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $inputFile,
-        [Parameter(Mandatory = $true, Position = 0)]
+        [Parameter(Mandatory = $false, Position = 1)]
         [string] $parameters
 
     )
