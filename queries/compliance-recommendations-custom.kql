@@ -1,0 +1,13 @@
+ securityresources
+| where type == "microsoft.security/regulatorycompliancestandards/regulatorycompliancecontrols/regulatorycomplianceassessments"
+| join kind=leftouter(resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
+| where properties.state == "Failed"
+| project
+    name,
+    subscription = name1,
+    displayName = properties.description,
+    nbrFailedResources = properties.failedResources
+| summarize
+    nbrFailedResources = sum(tolong(nbrFailedResources))
+    by name, tostring(displayName), subscription
+| order by nbrFailedResources desc
