@@ -32,8 +32,9 @@ function ExecuteQuery {
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $inputFile,
         [Parameter(Mandatory = $false, Position = 1)]
-        [string] $parameters
-
+        [string] $parameters,
+        [string] $logFile,
+        [switch] $writeToConsole
     )
 
     try {
@@ -41,12 +42,13 @@ function ExecuteQuery {
     
     }
     catch [System.Management.Automation.ItemNotFoundException] {
-        Write-Warning "File $inputFile does not exist. Skipping!"
+        Write-Log -message "File $inputFile does not exist. Skipping!" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         continue
     }
     catch {
-        Write-Warning "An uncatched error has occurred. Please investigate"
-        Write-Error $error[0]
+        Write-Log -message "An uncatched error has occurred. Please investigate" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+        Write-Log -message "Error: $_" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "ERROR"
+        exit
     }
 
     # Replace parameters with their value in the query
@@ -60,9 +62,8 @@ function ExecuteQuery {
         $results = Search-AzGraph -Query "$queryContent" -UseTenantScope -First 1000
     }
     catch {
-        Write-Warning "Something went wrong when executing the KQL query in the file $inputFile. Check below message for more information"
-        Write-Host $queryContent
-        Write-Warning $error[0]
+        Write-Log -message "Something went wrong when executing the KQL query in the file $inputFile. Check below message for more information" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+        Write-Log -message "Error: $_" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "ERROR"
         continue
     }
 
@@ -98,7 +99,9 @@ function ExecuteQueryRest {
     param
     (
         [Parameter(Mandatory = $true, Position = 0)]
-        [string] $inputFile
+        [string] $inputFile,
+        [string] $logFile,
+        [switch] $writeToConsole
     )
 
     # Execute query
@@ -107,12 +110,13 @@ function ExecuteQueryRest {
     
     }
     catch [System.Management.Automation.ItemNotFoundException] {
-        Write-Warning "File $inputFile does not exist. Skipping!"
+        Write-Log -message "File $inputFile does not exist. Skipping!" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         continue
     }
     catch {
-        Write-Warning "An uncatched error has occurred. Please investigate"
-        Write-Error $error[0]
+        Write-Log -message "An uncatched error has occurred. Please investigate" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+        Write-Log -message "Error: $_" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "ERROR"
+        exit
     }
 
     $uri = "https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2022-10-01"
@@ -128,8 +132,8 @@ function ExecuteQueryRest {
         $results = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body
     }
     catch {
-        Write-Warning "Something went wrong when executing the KQL query in the file $inputFile. Check below message for more information"
-        Write-Warning $error[0]
+        Write-Log -message "Something went wrong when executing the KQL query in the file $inputFile. Check below message for more information" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+        Write-Log -message "Error: $_" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "ERROR"
         continue
     }
 
@@ -139,7 +143,7 @@ function ExecuteQueryRest {
         $results.data | Export-Csv -Path $outputFile -Delimiter ";" -Encoding utf8
     }
     catch {
-        Write-Warning "Could not write output. Make sure the path for the output file ($outputFile) exists."
+        Write-Log -message "Could not write output. Make sure the path for the output file ($outputFile) exists." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         continue
     }
 }
@@ -169,14 +173,16 @@ function OutputCSV {
         [Parameter(Mandatory = $true, Position = 0)]
         [pscustomobject] $object,
         [Parameter(Mandatory = $true, Position = 1)]
-        [string] $outputFile
+        [string] $outputFile,
+        [string] $logFile,
+        [switch] $writeToConsole
     )
 
     try {
         $object | Export-Csv -Path $outputFile -Delimiter ";" -Encoding utf8
     }
     catch {
-        Write-Warning "Could not write output. Make sure the path for the output file ($outputFile) exists."
+        Write-Log -message "Could not write output. Make sure the path for the output file ($outputFile) exists." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         continue
     }
 }
@@ -276,26 +282,28 @@ function ExecuteMsGraphFunction {
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $component,
         [Parameter(Mandatory = $false, Position = 1)]
-        [string] $options = ""
+        [string] $options = "",
+        [string] $logFile,
+        [switch] $writeToConsole
     )
 
     $result = $null
 
     switch ($component) {
         "enterpriseApps" {
-            $result = graphEnterpriseAppsFunction -options "$options"
+            $result = graphEnterpriseAppsFunction -options "$options" -logFile $logFile -writeToConsole:$writeToConsole
         }
         "managedIdentities" {
-            $result = graphManagedIdentitiesFunction
+            $result = graphManagedIdentitiesFunction -logFile $logFile -writeToConsole:$writeToConsole
         }
         "directoryRoles" {
-            $result = graphDirectoryRolesFunction
+            $result = graphDirectoryRolesFunction -logFile $logFile -writeToConsole:$writeToConsole
         }
         "generalInfo" {
-            $result = graphGeneralInfoFunction
+            $result = graphGeneralInfoFunction -logFile $logFile -writeToConsole:$writeToConsole
         }
         Default {
-            Write-Warning "No MS Graph function defined for component $component"
+            Write-Log -message "No MS Graph function defined for component $component" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         }
     }
 
@@ -338,15 +346,19 @@ PS> $result = graphEnterpriseAppsFunction -options "secretExpiryWarningDays=30"
 The session needs to be connected to Microsoft Graph before running this script.
 #>
 function graphEnterpriseAppsFunction {
-    [Parameter(Mandatory = $false, Position = 0)]
-    [string] $options = ""
-
+    param(
+        [Parameter(Mandatory = $false, Position = 0)]
+        [string] $options = "",
+        [string] $logFile,
+        [switch] $writeToConsole
+    )
+    
     $optionValues = ConvertFrom-StringData -StringData ($options.Replace(";", "`n"))
 
 
     if ($optionValues.ContainsKey("secretExpiryWarningDays")) {
         $secretExpiryWarningDays = $optionValues.secretExpiryWarningDays
-        Write-Host "Custom value for secretExpiryWarningDays: $secretExpiryWarningDays"
+        Write-Log -message "Custom value for secretExpiryWarningDays: $secretExpiryWarningDays" -logFile $logFile -writeToConsole:$writeToConsole
     }
     else {
         $secretExpiryWarningDays = 30
@@ -357,7 +369,7 @@ function graphEnterpriseAppsFunction {
     $expiryWarningDate = (Get-Date).AddDays($secretExpiryWarningDays)
 
     if ($context) {
-        Write-Host "Gathering info on enterprise apps."
+        Write-Log -message "Gathering info on enterprise apps." -logFile $logFile -writeToConsole:$writeToConsole
         $result = [System.Collections.ArrayList]::new()
         $requiredProperties = "AppId, DisplayName, Description, PasswordCredentials, FederatedIdentityCredentials, AppRoles, CreatedDateTime, Owners, SignInAudience"
         $applicationList = Get-MgApplication -ExpandProperty FederatedIdentityCredentials -Property $requiredProperties
@@ -418,7 +430,7 @@ function graphEnterpriseAppsFunction {
 
             ## RBAC roles
             $servicePrincipalId = (Get-MgServicePrincipal -Filter "AppId eq `'$($application.AppId)`'").Id
-            $queryResults = ExecuteQuery -inputFile "queries/entra/RBACforEntraId.kql" -parameters "ID=$servicePrincipalId"
+            $queryResults = ExecuteQuery -inputFile "queries/entra/RBACforEntraId.kql" -parameters "ID=$servicePrincipalId" -logFile $logFile -writeToConsole:$writeToConsole
             $roles = ""
             foreach ($role in $queryResults) {
                 $roles += "role: $($role.roleName), scope: $($role.scopeName), type: $($role.scopeType) | "
@@ -447,7 +459,7 @@ function graphEnterpriseAppsFunction {
         }
     }
     else {
-        Write-Warning "No connection to Microsoft Graph. Cannot execute the enterpriseApps inventory."
+        Write-Log -message "No connection to Microsoft Graph. Cannot execute the enterpriseApps inventory." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         $result = $null
     }
     
@@ -481,18 +493,22 @@ PS> $result = graphManagedIdentitiesFunction
 The session needs to be connected to Microsoft Graph before running this script.
 #>
 function graphManagedIdentitiesFunction {
+    param (
+        [string] $logFile,
+        [switch] $writeToConsole
+    )
     
     $context = Get-MgContext
 
     if ($context) {
-        Write-Host "Gathering info on managed identities."
+        Write-Log -message "Gathering info on managed identities." -logFile $logFile -writeToConsole:$writeToConsole
         $result = [System.Collections.ArrayList]::new()
         $requiredProperties = "Id, DisplayName, AppId, Description, Owners, AlternativeNames, createdDateTime"
         $managedIdentityList = Get-MgServicePrincipal -filter "ServicePrincipalType eq 'ManagedIdentity'" -Property $requiredProperties
         foreach ($identity in $managedIdentityList) {
             # Create calculated members for managed identity
             ## RBAC roles
-            $queryResults = ExecuteQuery -inputFile "queries/entra/RBACforEntraId.kql" -parameters "ID=$($identity.Id)"
+            $queryResults = ExecuteQuery -inputFile "queries/entra/RBACforEntraId.kql" -parameters "ID=$($identity.Id)" -logFile $logFile -writeToConsole:$writeToConsole
             $roles = ""
             foreach ($role in $queryResults) {
                 $roles += "role: $($role.roleName), scope: $($role.scopeName), type: $($role.scopeType) | "
@@ -518,7 +534,7 @@ function graphManagedIdentitiesFunction {
         }
     }
     else {
-        Write-Warning "No connection to Microsoft Graph. Cannot execute the managedIdentity inventory."
+        Write-Log -message "No connection to Microsoft Graph. Cannot execute the managedIdentity inventory." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         $result = $null
     }
     
@@ -548,14 +564,18 @@ PS> $result = graphDirectoryRolesFunction
 The session needs to be connected to Microsoft Graph before running this script.
 #>
 function graphDirectoryRolesFunction {
+    param (
+        [string] $logFile,
+        [switch] $writeToConsole
+    )
     
     $context = Get-MgContext
 
     if ($context) {
-        Write-Host "Gathering info on Directory Roles"
+        Write-Log -message "Gathering info on Directory Roles." -logFile $logFile -writeToConsole:$writeToConsole
         $result = [System.Collections.ArrayList]::new()
 
-        $directoryRoles = Get-MgDirectoryRole -ExpandProperty Members -Property DisplayName,Members
+        $directoryRoles = Get-MgDirectoryRole -ExpandProperty Members -Property DisplayName, Members
 
         $cachedUsers = @{}
         foreach ($role in $directoryRoles) {
@@ -574,7 +594,7 @@ function graphDirectoryRolesFunction {
                         $amount += 1
                     }
                     catch {
-                        Write-Warning "Something went wrong when collecting the members of group $displayName"
+                        Write-Log -message "Something went wrong when collecting the members of group $($role.DisplayName)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
                     }
                     $cachedUsers.Add($memberId, $memberName)
                 }
@@ -594,7 +614,7 @@ function graphDirectoryRolesFunction {
         }
     }
     else {
-        Write-Warning "No connection to Microsoft Graph. Cannot execute the directoryRoles inventory."
+        Write-Log -message "No connection to Microsoft Graph. Cannot execute the directoryRoles inventory." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         $result = $null
     }
     
@@ -625,36 +645,42 @@ PS> $result = graphGeneralInfoFunction
 The session needs to be connected to Microsoft Graph before running this script.
 #>
 function graphGeneralInfoFunction {
+    param (
+        [string] $logFile,
+        [switch] $writeToConsole
+    )
     
     $context = Get-MgContext
 
     if ($context) {
-        Write-Host "Gathering info on Entra Tenant"
+        Write-Log -message "Gathering info on Entra Tenant." -logFile $logFile -writeToConsole:$writeToConsole
         $info = [ordered]@{}
 
         # Organization
-        $organization = Get-MgOrganization -Property DisplayName,Id
+        $organization = Get-MgOrganization -Property DisplayName, Id
         $info.Add("Name", $organization.DisplayName)
         $info.Add("Id", $organization.Id)
 
         # Domains
-        $domains = Get-MgDomain -Property Id,IsDefault,IsVerified
+        $domains = Get-MgDomain -Property Id, IsDefault, IsVerified
         $defaultDomain = ""
         $verifiedDomains = ""
         $otherDomains = ""
         foreach ($domain in $domains) {
-            if($domain.IsDefault){
+            if ($domain.IsDefault) {
                 $defaultDomain = $domain.Id
-            }elseif($domain.IsVerified){
+            }
+            elseif ($domain.IsVerified) {
                 $verifiedDomains += "$($domain.Id), "
-            }else{
+            }
+            else {
                 $otherDomains += "$($domain.Id), "
             }
         }
-        if($verifiedDomains -ne ""){
+        if ($verifiedDomains -ne "") {
             $verifiedDomains = $verifiedDomains -replace ".{2}$"
         }
-        if($otherDomains -ne ""){
+        if ($otherDomains -ne "") {
             $otherDomains = $otherDomains -replace ".{2}$"
         }
         $info.Add("Default domain", $defaultDomain)
@@ -663,25 +689,98 @@ function graphGeneralInfoFunction {
         
         #License
         $sku = ((Get-MgSubscribedSku).ServicePlans | Where-Object { $_.ServicePlanName -Like 'AAD_PREMIUM*' }).ServicePlanName
-        if($sku -contains "AAD_PREMIUM_P2"){
+        if ($sku -contains "AAD_PREMIUM_P2") {
             $info.Add("License", "Microsoft Entra ID P2")
-        }elseif ($sku -contains "AAD_PREMIUM") {
+        }
+        elseif ($sku -contains "AAD_PREMIUM") {
             $info.Add("License", "Microsoft Entra ID P1")
-        }else {
+        }
+        else {
             $info.Add("License", "Unknown")
         }
 
         $result = foreach ($key in $info.Keys) {
-           [PSCustomObject]@{
-            Item = $key
-            Value = $info[$key]
-           }
+            [PSCustomObject]@{
+                Item  = $key
+                Value = $info[$key]
+            }
         }
     }
     else {
-        Write-Warning "No connection to Microsoft Graph. Cannot execute the directoryRoles inventory."
+        Write-Log -message "No connection to Microsoft Graph. Cannot execute the generalInfo inventory." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         $result = $null
     }
     
     $result
+}
+
+<#
+.SYNOPSIS
+    Writes log messages to a specified file with a severity level and optionally to the console.
+
+.DESCRIPTION
+    The `Write-Log` function logs a message to a specified log file with a timestamp and a severity level.
+    Optionally, the function can also output the log message to the console, color-coded based on the severity level.
+
+.PARAMETER message
+    The message to log. This is the content that will be written to the log file and optionally to the console.
+
+.PARAMETER logFile
+    The full path to the log file where the message will be written. If the file does not exist, it will be created.
+
+.PARAMETER severityLevel
+    The severity level of the log message. Valid values are "INFO", "WARNING", and "ERROR". Default is "INFO".
+
+.PARAMETER writeToConsole
+    If specified, the log message will also be written to the console output (in addition to the log file).
+
+.EXAMPLE
+    Write-Log -message "This is a test message" -logFile "C:\Logs\script.log" -severityLevel "INFO"
+    
+    This will write the message "This is a test message" to the log file at "C:\Logs\script.log" with an INFO severity level.
+
+.EXAMPLE
+    Write-Log -message "This is a warning message" -logFile "C:\Logs\script.log" -severityLevel "WARNING" -writeToConsole
+    
+    This will write the message "This is a warning message" to the log file at "C:\Logs\script.log" and display it in the console with a yellow color.
+#>
+function Write-Log {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$message,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]$logFile,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("INFO", "WARNING", "ERROR")]
+        [string]$severityLevel = "INFO",
+
+        [switch]$writeToConsole
+    )
+
+    # Get the current timestamp
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+    # Format the log entry
+    $logEntry = "$timestamp - [$severityLevel] - $message"
+
+    # Write the log entry to the file 
+    try {
+        Add-Content -Path $logFile -Value $logEntry -ErrorAction Stop
+    }
+    catch {
+        Write-Error "Failed to write to log file: $_"
+    }
+
+    # Optionally write the log entry to the console
+    if ($writeToConsole) {
+        switch ($severityLevel) {
+            INFO { $textColor = "White" }
+            WARNING { $textColor = "Yellow" }
+            ERROR { $textColor = "Red" }
+            Default { $textColor = "White" }
+        }
+        Write-Host $logEntry -ForegroundColor $textColor
+    }
 }

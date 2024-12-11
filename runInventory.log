@@ -1,0 +1,61 @@
+2024-12-11 16:42:37 - [INFO] - Started runInventory script
+2024-12-11 16:42:37 - [INFO] - Successfully read configuration file: ./config.json
+2024-12-11 16:42:37 - [INFO] - Connecting to Microsoft Graph (Optional)
+2024-12-11 16:42:38 - [INFO] - Executing query resource-organization
+2024-12-11 16:42:39 - [INFO] - Executing query resources-overview
+2024-12-11 16:42:40 - [INFO] - Executing query resources-full-raw
+2024-12-11 16:42:41 - [INFO] - Executing query azure-policy
+2024-12-11 16:42:42 - [INFO] - Executing query advisor-recommendations
+2024-12-11 16:42:42 - [INFO] - Executing query compliance-recommendations
+2024-12-11 16:42:45 - [INFO] - Executing query security-recommendations
+2024-12-11 16:42:46 - [INFO] - Executing query RBAC
+2024-12-11 16:43:04 - [INFO] - Collecting detailed info on resources
+2024-12-11 16:43:04 - [INFO] - Getting information on storageAccounts (microsoft.storage/storageaccounts) resources
+2024-12-11 16:43:04 - [INFO] - Getting information on virtualNetworks (microsoft.network/virtualnetworks) resources
+2024-12-11 16:43:05 - [INFO] - Getting information on vnetPeerings (microsoft.network/virtualnetworks) resources
+2024-12-11 16:43:05 - [INFO] - Getting information on virtualMachines (microsoft.compute/virtualmachines) resources
+2024-12-11 16:43:06 - [INFO] - Getting information on networkInterfaces (microsoft.network/networkinterfaces) resources
+2024-12-11 16:43:07 - [INFO] - Getting information on publicIpAddresses (microsoft.network/publicipaddresses) resources
+2024-12-11 16:43:07 - [INFO] - Getting information on networkSecurityGroups (microsoft.network/networksecuritygroups) resources
+2024-12-11 16:43:08 - [INFO] - Getting information on nsgRules (Microsoft.Network/networkSecurityGroups/securityRules) resources
+2024-12-11 16:43:08 - [INFO] - Getting information on disks (microsoft.compute/disks) resources
+2024-12-11 16:43:09 - [INFO] - Getting information on keyVaults (microsoft.keyvault/vaults) resources
+2024-12-11 16:43:09 - [INFO] - Getting information on missingTypes () resources
+2024-12-11 16:43:10 - [INFO] - Custom value for secretExpiryWarningDays: 365
+2024-12-11 16:43:10 - [INFO] - Gathering info on enterprise apps.
+2024-12-11 16:43:36 - [INFO] - Gathering info on managed identities.
+2024-12-11 16:43:47 - [INFO] - Gathering info on Directory Roles.
+2024-12-11 16:43:48 - [INFO] - Gathering info on Entra Tenant.
+2024-12-11 16:48:50 - [INFO] - Started runInventory script
+2024-12-11 16:48:50 - [INFO] - Successfully read configuration file: ./config.json
+2024-12-11 16:48:50 - [INFO] - Connecting to Microsoft Graph (Optional)
+2024-12-11 16:48:50 - [INFO] - Collecting base information.
+2024-12-11 16:48:50 - [INFO] - Executing query resource-organization
+2024-12-11 16:48:51 - [INFO] - Executing query resources-overview
+2024-12-11 16:48:52 - [INFO] - Executing query resources-full-raw
+2024-12-11 16:48:52 - [INFO] - Executing query azure-policy
+2024-12-11 16:48:53 - [INFO] - Executing query advisor-recommendations
+2024-12-11 16:48:54 - [INFO] - Executing query compliance-recommendations
+2024-12-11 16:48:56 - [INFO] - Executing query security-recommendations
+2024-12-11 16:48:56 - [INFO] - Executing query RBAC
+2024-12-11 16:48:57 - [INFO] - Executing custom function for RBAC
+2024-12-11 16:49:09 - [INFO] - Collecting detailed info on resources
+2024-12-11 16:49:09 - [INFO] - Getting information on storageAccounts (microsoft.storage/storageaccounts) resources
+2024-12-11 16:49:10 - [INFO] - Getting information on virtualNetworks (microsoft.network/virtualnetworks) resources
+2024-12-11 16:49:11 - [INFO] - Executing custom function for VirtualNetworks
+2024-12-11 16:49:11 - [INFO] - Getting information on vnetPeerings (microsoft.network/virtualnetworks) resources
+2024-12-11 16:49:11 - [INFO] - Getting information on virtualMachines (microsoft.compute/virtualmachines) resources
+2024-12-11 16:49:12 - [INFO] - Executing custom function for VirtualMachines
+2024-12-11 16:49:12 - [INFO] - Getting information on networkInterfaces (microsoft.network/networkinterfaces) resources
+2024-12-11 16:49:12 - [INFO] - Getting information on publicIpAddresses (microsoft.network/publicipaddresses) resources
+2024-12-11 16:49:13 - [INFO] - Getting information on networkSecurityGroups (microsoft.network/networksecuritygroups) resources
+2024-12-11 16:49:14 - [INFO] - Executing custom function for NetworkSecurityGroups
+2024-12-11 16:49:14 - [INFO] - Getting information on nsgRules (Microsoft.Network/networkSecurityGroups/securityRules) resources
+2024-12-11 16:49:14 - [INFO] - Getting information on disks (microsoft.compute/disks) resources
+2024-12-11 16:49:15 - [INFO] - Getting information on keyVaults (microsoft.keyvault/vaults) resources
+2024-12-11 16:49:15 - [INFO] - Getting information on missingTypes () resources
+2024-12-11 16:49:16 - [INFO] - Custom value for secretExpiryWarningDays: 365
+2024-12-11 16:49:16 - [INFO] - Gathering info on enterprise apps.
+2024-12-11 16:49:47 - [INFO] - Gathering info on managed identities.
+2024-12-11 16:49:58 - [INFO] - Gathering info on Directory Roles.
+2024-12-11 16:49:59 - [INFO] - Gathering info on Entra Tenant.
