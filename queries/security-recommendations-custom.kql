@@ -1,0 +1,26 @@
+securityresources
+| where type == "microsoft.security/assessments"
+| join kind=leftouter(resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
+| where properties.status.code == "Unhealthy"
+| project
+    name,
+    subscription = name1,
+    resourceType = tostring(properties.resourceDetails.ResourceType),
+    resourceName = tostring(properties.resourceDetails.ResourceName),
+    displayName = tostring(properties.displayName),
+    severity = tostring(properties.metadata.severity)
+| extend severityOrder = case(
+    severity == "Critical", 1,
+    severity == "High", 2,
+    severity == "Medium", 3,
+    severity == "Low", 4,
+    5)
+| summarize resourceNames = make_list(resourceName) by name, subscription, resourceType, displayName, severity, severityOrder
+| order by severityOrder asc
+| project
+    name,
+    subscription,
+    displayName,
+    resourceType,
+    resourceNames,
+    severity

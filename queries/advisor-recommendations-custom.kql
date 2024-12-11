@@ -1,0 +1,28 @@
+advisorresources
+| where type == "microsoft.advisor/recommendations"
+| extend
+    id = tostring(properties.recommendationTypeId),
+    description = tostring(properties.shortDescription.solution),
+    resource = iff(properties.impactedField == "Microsoft.Subscriptions/subscriptions",subscriptionId,strcat(subscriptionId, "/", resourceGroup, "/", split(properties.resourceMetadata.resourceId,"/")[8])),
+    resourceType = tostring(properties.impactedField),
+    category = tostring(properties.category),
+    impact = tostring(properties.impact)
+| summarize
+    resource = make_list(resource),
+    nbrResources = count(resource)
+    by id, description, category, impact, resourceType
+| extend impactOrder = case(
+    impact == "Critical", 1,
+    impact == "High", 2,
+    impact == "Medium", 3,
+    impact == "Low", 4,
+    5)
+| order by impactOrder asc, nbrResources desc
+| project
+    id,
+    description,
+    category,
+    impact,
+    resourceType,
+    nbrResources,
+    resource

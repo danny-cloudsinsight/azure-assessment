@@ -8,7 +8,7 @@ resources
 | mv-expand subnet = subnetsArray to typeof(dynamic)
 | extend 
     subnetName = iif(subnet.name == "", "No subnet", subnet.name),
-    subnetAddressPrefix = iif(subnet.properties.addressPrefix == "", "No address prefix", subnet.properties.addressPrefix),
+    subnetAddressPrefix = iif(subnet.properties.addressPrefix == "", iif(subnet.properties.addressPrefixes == "", "No address Prefix", subnet.properties.addressPrefixes), subnet.properties.addressPrefix),
     subnetNsg = iif(isnotempty(subnet.properties.networkSecurityGroup), split(subnet.properties.networkSecurityGroup.id, "/")[-1],"None"),
     virtualNetworkPeerings = tostring(properties.virtualNetworkPeerings)
 | summarize 
