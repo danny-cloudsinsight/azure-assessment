@@ -1,56 +1,83 @@
+param (
+    [string] $inputFile = "./config.json",
+    [string] $logFile = "./runInventory.log",
+    [switch] $writeToConsole
+)
+
 $ErrorActionPreference = 'Stop'
 
 Import-Module ./modules/functions.psm1 -Force
 Import-Module ./modules/customScripts.psm1 -Force
 
-$inputFile = (get-content "./config.json" | ConvertFrom-Json)
+# Ensure the directory for the log file exists
+$logDirectory = Split-Path -Path $logFile -Parent
+if (-not (Test-Path -Path $logDirectory)) {
+    throw "Log directory not found: $logDirectory"
+}
 
-Write-Host "Connecting to Microsoft Graph (Optional)"
-if ($inputFile.MicrosoftGraph.enabled){
-    Connect-MgGraph -Scopes $inputFile.MicrosoftGraph.scopes
-}else {
-    Write-Warning "Microsoft Graph is not enabled, some features may not work as expected"
-    Disconnect-MgGraph
+# Read and parse the configuration file
+if (-not (Test-Path $inputFile)) {
+    throw "Configuration file not found: $configFile"
+}
+
+try {
+    $config = Get-Content -Raw -Path $inputFile | ConvertFrom-Json
+    Write-Log -message "Started runInventory script" -logFile $logFile -writeToConsole:$writeToConsole
+    Write-Log -message "Successfully read configuration file: $inputFile" -logFile $logFile -writeToConsole:$writeToConsole
+}
+catch {
+    throw "Failed to read or parse input file: $_"
 }
 
 
-Write-Host "Collecting base information."
+Write-Log -message "Connecting to Microsoft Graph (Optional)" -logFile $logFile -writeToConsole:$writeToConsole
+if ($config.MicrosoftGraph.enabled) {
+    Connect-MgGraph -Scopes $config.MicrosoftGraph.scopes -NoWelcome
+}
+else {
+    Write-Log -message "Microsoft Graph is not enabled, some features may not work as expected" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+    Disconnect-MgGraph
+}
 
-foreach ($query in $inputFile.queries) {
-    Write-Host "Executing query $($query.name)"
-    $queryInput= "./queries/$($query.name).kql"
-    $queryOutput= "./results/$($query.name).csv"
+Write-Log -message "Collecting base information." -logFile $logFile -writeToConsole:$writeToConsole
+
+foreach ($query in $config.queries) {
+    Write-Log -message "Executing query $($query.name)" -logFile $logFile -writeToConsole:$writeToConsole
+    $queryInput = "./queries/$($query.name).kql"
+    $queryOutput = "./results/$($query.name).csv"
     
-    $results = ExecuteQuery -inputFile $queryInput
+    $results = ExecuteQuery -inputFile $queryInput -logFile $logFile -writeToConsole:$writeToConsole
 
-    if($results){
-        if($query.custom){
-            $results = ExecuteCustomScript -resourceType $query.name -object $results -options $query.customOptions
+    if ($results) {
+        if ($query.custom) {
+            $results = ExecuteCustomScript -resourceType $query.name -object $results -options $query.customOptions -logFile $logFile -writeToConsole:$writeToConsole
         }
         OutputCSV -object $results -outputFile $queryOutput
-    }else {
-        Write-Warning "Results object does not exist!"
+    }
+    else {
+        Write-Log "Results object does not exist!" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
     }
 
     Clear-Variable results
 }
 
-Write-Host "Collecting detailed info on resources"
+Write-Log -message "Collecting detailed info on resources" -logFile $logFile -writeToConsole:$writeToConsole
 
-foreach ($resourceType in $inputFile.resourceTypes) {
-    Write-Host "Getting information on $($resourceType.name) ($($resourceType.type)) resources"
-    $queryInput= "./queries/resourceTypes/$($resourceType.name).kql"
-    $queryOutput= "./results/resourceType-$($resourceType.name).csv"
+foreach ($resourceType in $config.resourceTypes) {
+    Write-Log -message "Getting information on $($resourceType.name) ($($resourceType.type)) resources" -logFile $logFile -writeToConsole:$writeToConsole
+    $queryInput = "./queries/resourceTypes/$($resourceType.name).kql"
+    $queryOutput = "./results/resourceType-$($resourceType.name).csv"
 
-    $results = ExecuteQuery -inputFile $queryInput
+    $results = ExecuteQuery -inputFile $queryInput -logFile $logFile -writeToConsole:$writeToConsole
 
-    if($results){
-        if($resourceType.custom){
-            $results = ExecuteCustomScript -resourceType $resourceType.name -object $results -options $resourceType.customOptions
+    if ($results) {
+        if ($resourceType.custom) {
+            $results = ExecuteCustomScript -resourceType $resourceType.name -object $results -options $resourceType.customOptions -logFile $logFile -writeToConsole:$writeToConsole
         }
         OutputCSV -object $results -outputFile $queryOutput
-    }else {
-        Write-Warning "Results object does not exist!"
+    }
+    else {
+        Write-Log -message "Results object does not exist!" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
     }
 
     Clear-Variable results
@@ -58,18 +85,20 @@ foreach ($resourceType in $inputFile.resourceTypes) {
 }
 
 # Collect Entra ID inventory
-if($inputFile.MicrosoftGraph.enabled){
-    foreach ($component in $inputFile.MicrosoftGraph.inventory) {
+if ($config.MicrosoftGraph.enabled) {
+    foreach ($component in $config.MicrosoftGraph.inventory) {
         if ($component.enabled) {
-            $results = ExecuteMsGraphFunction -component $component.name -options $component.customOptions
+            $results = ExecuteMsGraphFunction -component $component.name -options $component.customOptions -logFile $logFile -writeToConsole:$writeToConsole
             if ($results) {
                 $outputFile = "./results/entra-$($component.name).csv"
                 OutputCSV -object $results -outputFile $outputFile
-            }else {
-                Write-Warning "No results for $($component.name)"
+            }
+            else {
+                Write-Log -message "No results for $($component.name)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
             }
         }
     }
-}else {
-    Write-Warning "No Entra ID inventory will be collected as Microsoft Graph is not enabled"
+}
+else {
+    Write-Log -message "No Entra ID inventory will be collected as Microsoft Graph is not enabled" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
 }

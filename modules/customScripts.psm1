@@ -31,24 +31,26 @@ function ExecuteCustomScript {
         [Parameter(Mandatory = $true, Position = 1)]
         [pscustomobject] $object,
         [Parameter(Mandatory = $false, Position = 2)]
-        [string] $options
+        [string] $options,
+        [string] $logFile,
+        [switch] $writeToConsole
     )
 
     switch ($resourceType) {
         "RBAC" {
-            $result = CustomRBACFunction -object $object -graphOption $options
+            $result = CustomRBACFunction -object $object -graphOption $options -logFile $logFile -writeToConsole:$writeToConsole
         }
         "virtualNetworks" { 
-            $result = CustomVnetFunction -object $object
+            $result = CustomVnetFunction -object $object -logFile $logFile -writeToConsole:$writeToConsole
         }
         "virtualMachines" {
-            $result = CustomVmFunction -object $object
+            $result = CustomVmFunction -object $object -logFile $logFile -writeToConsole:$writeToConsole
         }
         "networkSecurityGroups" {
-            $result = CustomNsgFunction -object $object
+            $result = CustomNsgFunction -object $object -logFile $logFile -writeToConsole:$writeToConsole
         }
         Default {
-            Write-Warning "No custom function defined for resource type $resourceType"
+            Write-Log -message "No custom function defined for resource type $resourceType" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
             $result = $object
         }
     }
@@ -83,9 +85,11 @@ More information on the vnetPeerings will be collected via the vnetPeerings.kql 
 function CustomVnetFunction {
     param (
         [Parameter(Mandatory = $true, Position = 0)]
-        [pscustomobject] $object
+        [pscustomobject] $object,
+        [string] $logFile,
+        [switch] $writeToConsole
     )
-    Write-Host "Executing custom function for VirtualNetworks"
+    Write-Log -message "Executing custom function for VirtualNetworks" -logFile $logFile -writeToConsole:$writeToConsole
     $result = $object
 
     
@@ -146,9 +150,11 @@ More information on the data disks of the VM will be collected using the disks.k
 function CustomVmFunction {
     param (
         [Parameter(Mandatory = $true, Position = 0)]
-        [pscustomobject] $object
+        [pscustomobject] $object,
+        [string] $logFile,
+        [switch] $writeToConsole
     )
-    Write-Host "Executing custom function for VirtualMachines"
+    Write-Log -message "Executing custom function for VirtualMachines" -logFile $logFile -writeToConsole:$writeToConsole
     $result = $object
 
     
@@ -211,9 +217,11 @@ More information on the custom security rules that are part of this NSG will be 
 function CustomNsgFunction {
     param (
         [Parameter(Mandatory = $true, Position = 0)]
-        [pscustomobject] $object
+        [pscustomobject] $object,
+        [string] $logFile,
+        [switch] $writeToConsole
     )
-    Write-Host "Executing custom function for NetworkSecurityGroups"
+    Write-Log -message "Executing custom function for NetworkSecurityGroups" -logFile $logFile -writeToConsole:$writeToConsole
     $result = $object
 
     
@@ -301,15 +309,17 @@ function CustomRBACFunction {
         [Parameter(Mandatory = $true, Position = 0)]
         [pscustomobject] $object,
         [Parameter(Mandatory = $false, Position = 1)]
-        [string] $graphOption = "None"
+        [string] $graphOption = "None",
+        [string] $logFile,
+        [switch] $writeToConsole
     )
-    Write-Host "Executing custom function for RBAC"
+    Write-Log -message "Executing custom function for RBAC" -logFile $logFile -writeToConsole:$writeToConsole
     $result = $object
 
     switch ($graphOption) {
         { $_.ToLower() -in "base", "full" } { $context = Get-MgContext }
         { $_.ToLower() -in "none" } { $context = $null }
-        Default { $context = $null; Write-Warning "Incorrect value for graphOption ($graphOption), assuming 'None'. Correct values are 'None', 'Base', or 'Full'" }
+        Default { $context = $null; Write-Log "Incorrect value for graphOption ($graphOption), assuming 'None'. Correct values are 'None', 'Base', or 'Full'"  -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING" }
     }
     
     if ($context) {
@@ -345,7 +355,7 @@ function CustomRBACFunction {
                                         $members += "$memberName, "
                                     }
                                     catch {
-                                       Write-Warning "Something went wrong when collecting the members of group $displayName"
+                                        Write-Log -message "Something went wrong when collecting the members of group $displayName" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
                                     }
                                     
                                 }
@@ -413,8 +423,8 @@ function CustomRBACFunction {
             }
         }
     }
-    else { 
-        Write-Warning "No connection to Microsoft Graph (or -graphOption = 'None'). IDs will not be translated" 
+    else {
+        Write-Log -message "No connection to Microsoft Graph (or -graphOption = 'None'). IDs will not be translated" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
     }
     
     return $result
