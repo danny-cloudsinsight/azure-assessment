@@ -19,5 +19,6 @@ resources
     minimumTlsVersion = properties.minimumTlsVersion,
     defaultToOAuthAuthentication = properties.defaultToOAuthAuthentication,
     allowSharedKeyAccess = properties.allowSharedKeyAccess,
+    creationTime = format_datetime(todatetime(properties.creationTime), 'yyyy-MM-dd HH:mm:ss'),
     tags,
     fullDetails
