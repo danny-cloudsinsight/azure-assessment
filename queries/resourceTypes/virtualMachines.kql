@@ -20,6 +20,6 @@ resources
     securityProfile = properties.securityProfile,
     state = properties.extended.instanceView.powerState.displayStatus,
     bootDiagnostics = properties.diagnosticsProfile.bootDiagnostics.enabled,
+    creationTime = format_datetime(todatetime(properties.timeCreated), 'yyyy-MM-dd HH:mm:ss'),
     tags,
     fullDetails
-    

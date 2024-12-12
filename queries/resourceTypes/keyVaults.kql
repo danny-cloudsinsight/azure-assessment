@@ -2,7 +2,7 @@ resources
 | where type == "microsoft.keyvault/vaults"
 | extend
     fullDetails = pack_all(),
-    sku = strcat(properties.sku.family," - ",properties.sku.name),
+    sku = strcat(properties.sku.family," - ",properties.sku.type),
     accessPolicies = iff(tobool(properties.enableRbacAuthorization), "Not used", properties.accessPolicies)
 | join kind=leftouter (resourcecontainers | where type == "microsoft.resources/subscriptions") on subscriptionId
 | project
@@ -17,5 +17,9 @@ resources
     enableRBAC = properties.enableRbacAuthorization,
     accessPolicies,
     enablePurgeProtection = properties.enablePurgeProtection,
+    creationTime = format_datetime(todatetime(systemData.createdAt), 'yyyy-MM-dd HH:mm:ss'),
+    createdBy = systemData.createdBy,
+    lastUpdateTime = format_datetime(todatetime(systemData.lastModifiedAt), 'yyyy-MM-dd HH:mm:ss'),
+    lastUpdatedBy = systemData.lastModifiedBy,
     tags,
     fullDetails

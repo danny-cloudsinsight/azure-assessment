@@ -20,4 +20,8 @@ policyresources
     scopeName = iff(isnotnull(properties2.displayName), properties2.displayName, name2),
     location,
     identity = tostring(identity),
+    creationTime= format_datetime(todatetime(properties.metadata.createdOn), 'yyyy-MM-dd HH:mm:ss'),
+    createdBy = properties.metadata.createdBy,
+    lastUpdatedTime = format_datetime(todatetime(properties.metadata.updatedOn), 'yyyy-MM-dd HH:mm:ss'),
+    lastUpdatedBy = properties.metadata.updatedBy,
     fullProperties = tostring(properties)

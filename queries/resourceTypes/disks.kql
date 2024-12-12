@@ -10,5 +10,6 @@ resources
     sku = sku.name,
     size = properties.diskSizeGB,
     state = properties.diskState,
+    creationTime = format_datetime(todatetime(properties.timeCreated), 'yyyy-MM-dd HH:mm:ss'),
     tags,
     fullDetails
