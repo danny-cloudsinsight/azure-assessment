@@ -5,6 +5,12 @@
   - Managed Identities
   - Entra Director Role members
   - General Tenant information
+- Added created and updated date for all resources that have this information
+- Added logging to file for the runInventory script
+- Added function to convert csv file to markdown table
+- Bugfixes:
+  - Adapt virtualNetwork query to accept both addressPrefix and addresPrefixes for subnet properties
+  - Correct issue with caching in custom function for RBAC ()
 
 # Version 0.2
 
