@@ -218,7 +218,7 @@ function OutputJson {
     )
 
     try {
-        $object | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
+        $object | ConvertTo-Json -Depth 20 | Out-File -FilePath $outputFile -Encoding utf8
     }
     catch {
         Write-Log -message "Could not write output. Make sure the path for the output file ($outputFile) exists." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"

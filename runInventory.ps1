@@ -36,7 +36,6 @@ if ($config.MicrosoftGraph.enabled) {
 }
 else {
     Write-Log -message "Microsoft Graph is not enabled, some features may not work as expected" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
-    Disconnect-MgGraph
 }
 
 Write-Log -message "Collecting base information." -logFile $logFile -writeToConsole:$writeToConsole
