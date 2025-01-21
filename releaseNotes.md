@@ -11,6 +11,7 @@
 - Bugfixes:
   - Adapt virtualNetwork query to accept both addressPrefix and addresPrefixes for subnet properties
   - Correct issue with caching in custom function for RBAC ()
+- Added json export (to be used for further analysis (PSRule))
 
 # Version 0.2
 
