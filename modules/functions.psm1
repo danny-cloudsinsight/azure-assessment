@@ -38,7 +38,7 @@ function ExecuteQuery {
     )
 
     try {
-        $queryContent = get-content -Path $inputFile
+        $queryContent = Get-Content -Path $inputFile
     
     }
     catch [System.Management.Automation.ItemNotFoundException] {
@@ -106,7 +106,7 @@ function ExecuteQueryRest {
 
     # Execute query
     try {
-        $queryContent = get-content -Path $inputFile
+        $queryContent = Get-Content -Path $inputFile
     
     }
     catch [System.Management.Automation.ItemNotFoundException] {
@@ -482,6 +482,7 @@ function graphEnterpriseAppsFunction {
 
             # Create application custom object to add to array
             $tempObject = [PSCustomObject]@{
+                Type                 = "entra/appregistrations"
                 DisplayName          = $application.DisplayName
                 AppId                = $application.AppId
                 Description          = $application.Description
@@ -543,7 +544,7 @@ function graphManagedIdentitiesFunction {
         Write-Log -message "Gathering info on managed identities." -logFile $logFile -writeToConsole:$writeToConsole
         $result = [System.Collections.ArrayList]::new()
         $requiredProperties = "Id, DisplayName, AppId, Description, Owners, AlternativeNames, createdDateTime"
-        $managedIdentityList = Get-MgServicePrincipal -filter "ServicePrincipalType eq 'ManagedIdentity'" -Property $requiredProperties
+        $managedIdentityList = Get-MgServicePrincipal -Filter "ServicePrincipalType eq 'ManagedIdentity'" -Property $requiredProperties
         foreach ($identity in $managedIdentityList) {
             # Create calculated members for managed identity
             ## RBAC roles
@@ -645,6 +646,7 @@ function graphDirectoryRolesFunction {
             
             # Create application custom object to add to array
             $tempObject = [PSCustomObject]@{
+                Type            = "entra/directoryroles"
                 DisplayName     = $role.DisplayName
                 NumberOfMembers = $amount
                 Members         = $members
