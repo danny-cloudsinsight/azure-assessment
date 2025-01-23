@@ -3,7 +3,7 @@ authorizationresources
 | extend
     scopeType =  case (properties.scope =="/", "managementGroups",
                         properties.scope startswith("/providers/Microsoft.Management/"), "managementGroups",
-                        properties.scope startswith("/providers/Microsoft.Subscription/aliases"), "aliases",
+                        properties.scope startswith("/providers/Microsoft.Subscription/aliases"), "subscriptions",
                         properties.scope contains("/providers/"), strcat_array(array_slice(split(split(properties.scope,"/providers")[-1],"/"),0,(array_length(split(split(properties.scope,"/providers")[-1],"/"))-2)), "/"),
                         properties.scope contains("/resourceGroups/"), "resourceGroups",
                         "subscriptions" ),
@@ -20,6 +20,7 @@ authorizationresources
                         scopeType in ("managementGroups", "subscriptions"), iff(isnotnull(properties2.displayName), properties2.displayName, name2),
                         split(properties.scope,"/")[-1])
 | project
+    type,
     scopeType,
     scopeName,
     roleName,
