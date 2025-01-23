@@ -1,6 +1,6 @@
 {
     "MicrosoftGraph": {
-        "enabled": true,
+        "enabled": false,
         "scopes": "Directory.Read.All",
         "inventory": [
             {

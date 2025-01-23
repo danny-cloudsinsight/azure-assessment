@@ -1,5 +1,6 @@
 # Ignore all results files
-results/*.csv
+results/**/*.csv
+results/**/*.json
 results/*.zip
 
 #Ignore Apple system file

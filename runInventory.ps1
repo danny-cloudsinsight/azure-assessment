@@ -36,7 +36,6 @@ if ($config.MicrosoftGraph.enabled) {
 }
 else {
     Write-Log -message "Microsoft Graph is not enabled, some features may not work as expected" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
-    Disconnect-MgGraph
 }
 
 Write-Log -message "Collecting base information." -logFile $logFile -writeToConsole:$writeToConsole
@@ -44,7 +43,8 @@ Write-Log -message "Collecting base information." -logFile $logFile -writeToCons
 foreach ($query in $config.queries) {
     Write-Log -message "Executing query $($query.name)" -logFile $logFile -writeToConsole:$writeToConsole
     $queryInput = "./queries/$($query.name).kql"
-    $queryOutput = "./results/$($query.name).csv"
+    $queryOutputCsv = "./results/csv/$($query.name).csv"
+    $queryOutputJson = "./results/json/$($query.name).json"
     
     $results = ExecuteQuery -inputFile $queryInput -logFile $logFile -writeToConsole:$writeToConsole
 
@@ -52,7 +52,8 @@ foreach ($query in $config.queries) {
         if ($query.custom) {
             $results = ExecuteCustomScript -resourceType $query.name -object $results -options $query.customOptions -logFile $logFile -writeToConsole:$writeToConsole
         }
-        OutputCSV -object $results -outputFile $queryOutput
+        OutputCSV -object $results -outputFile $queryOutputCsv
+        OutputJson -object $results -outputFile $queryOutputJson
     }
     else {
         Write-Log "Results object does not exist!" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
@@ -66,7 +67,9 @@ Write-Log -message "Collecting detailed info on resources" -logFile $logFile -wr
 foreach ($resourceType in $config.resourceTypes) {
     Write-Log -message "Getting information on $($resourceType.name) ($($resourceType.type)) resources" -logFile $logFile -writeToConsole:$writeToConsole
     $queryInput = "./queries/resourceTypes/$($resourceType.name).kql"
-    $queryOutput = "./results/resourceType-$($resourceType.name).csv"
+    $queryDetailedOutputCsv = "./results/csv/resourceType-$($resourceType.name).csv"
+    $queryDetailedOutputJson = "./results/json/resourceType-$($resourceType.name).json"
+
 
     $results = ExecuteQuery -inputFile $queryInput -logFile $logFile -writeToConsole:$writeToConsole
 
@@ -74,7 +77,9 @@ foreach ($resourceType in $config.resourceTypes) {
         if ($resourceType.custom) {
             $results = ExecuteCustomScript -resourceType $resourceType.name -object $results -options $resourceType.customOptions -logFile $logFile -writeToConsole:$writeToConsole
         }
-        OutputCSV -object $results -outputFile $queryOutput
+        OutputCSV -object $results -outputFile $queryDetailedOutputCsv
+        OutputJson -object $results -outputFile $queryDetailedOutputJson
+
     }
     else {
         Write-Log -message "Results object does not exist!" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
@@ -90,8 +95,11 @@ if ($config.MicrosoftGraph.enabled) {
         if ($component.enabled) {
             $results = ExecuteMsGraphFunction -component $component.name -options $component.customOptions -logFile $logFile -writeToConsole:$writeToConsole
             if ($results) {
-                $outputFile = "./results/entra-$($component.name).csv"
-                OutputCSV -object $results -outputFile $outputFile
+                $outputFileCsv = "./results/csv/entra-$($component.name).csv"
+                $outputFileJson = "./results/json/entra-$($component.name).json"
+
+                OutputCSV -object $results -outputFile $outputFileCsv
+                OutputJson -object $results -outputFile $outputFileJson
             }
             else {
                 Write-Log -message "No results for $($component.name)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"

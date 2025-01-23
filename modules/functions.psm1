@@ -189,6 +189,45 @@ function OutputCSV {
 
 <#
 .SYNOPSIS
+Creates a Json file from a Powershell object
+
+.DESCRIPTION
+Creates a Json file using a Powershell object (PSObject) as first parameter and location of the json file as the second parameter
+
+.PARAMETER object
+Contains the PSObject to write to Json
+
+.PARAMETER outputFile
+Location of the outputFile
+
+.EXAMPLE
+PS> $processes = Get-Process
+PS> OutputJson -object $processes -outputFile "./processes.json"
+
+.NOTES
+If you want to create the json file in a different folder, this folder needs to exist.
+#>
+function OutputJson {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [pscustomobject] $object,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string] $outputFile,
+        [string] $logFile,
+        [switch] $writeToConsole
+    )
+
+    try {
+        $object | ConvertTo-Json -Depth 20 | Out-File -FilePath $outputFile -Encoding utf8
+    }
+    catch {
+        Write-Log -message "Could not write output. Make sure the path for the output file ($outputFile) exists." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+        continue
+    }
+}
+
+<#
+.SYNOPSIS
 Turns a CSV file into a Markdown table
 
 .DESCRIPTION
