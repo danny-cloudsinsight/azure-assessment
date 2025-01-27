@@ -1,2 +1,3 @@
 resources
+| join kind=leftouter appserviceresources on $left.id == $right.id
 | order by name asc

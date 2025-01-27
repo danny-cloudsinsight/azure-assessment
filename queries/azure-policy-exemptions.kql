@@ -1,0 +1,2 @@
+policyresources
+| where tolower(type) == tolower("Microsoft.Authorization/policyExemptions")
