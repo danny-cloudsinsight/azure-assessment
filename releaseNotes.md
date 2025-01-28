@@ -1,3 +1,9 @@
+# Version 0.4
+
+- Add queries to check the rules in PSRule.Rules.Azure:
+  - AzurePolicy
+  - Defender plans
+
 # Version 0.3
 
 - Added inventory of following Entra ID components
