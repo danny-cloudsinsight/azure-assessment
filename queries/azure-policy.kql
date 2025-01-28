@@ -10,6 +10,7 @@ policyresources
 | join kind=leftouter(policyresources | where type in ("microsoft.authorization/policydefinitions", "microsoft.authorization/policysetdefinitions")) on $left.policyDefinitionId == $right.id
 | join kind=leftouter resourcecontainers on $left.scope == $right.id
 | project
+    type,
     name,
     policyDefinitionId,
     policyDefinitionDisplayName = properties1.displayName,

@@ -1,0 +1,3 @@
+policyresources
+| where tolower(type) in ("microsoft.authorization/policydefinitions","microsoft.authorization/policysetdefinitions")
+| where properties.policyType == "Custom"
