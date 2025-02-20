@@ -1,0 +1,15 @@
+{
+    "general": {
+        "rawOutputFolder": "./rawResults/",
+        "logFolder": "./logs/",
+        "writeLogstoConsole": true
+    },
+    "azure": {
+        "queryFolder": "./collectionScripts/azure"
+    },
+    "entra": {
+        "enabled": true,
+        "scopes": "Directory.Read.All",
+        "scriptFolder": "./collectionScripts/entra"
+    }
+}

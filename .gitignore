@@ -2,6 +2,7 @@
 results/**/*.csv
 results/**/*.json
 results/*.zip
+rawresults/*
 
 #Ignore Apple system file
 .DS_Store
