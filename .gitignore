@@ -1,8 +1,10 @@
 # Ignore all results files
-results/**/*.csv
-results/**/*.json
-results/*.zip
-rawresults/*
+**/results/**/*.csv
+**/results/**/*.json
+**/results/*.zip
+**/rawresults/*
+**/rawresultsOLD/*
+**/results.zip
 
 #Ignore Apple system file
 .DS_Store

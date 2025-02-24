@@ -58,8 +58,15 @@ function ExecuteQuery {
         $queryContent = $queryContent.Replace("%$($_.Key.ToUpper())%", $_.Value)
     }
 
+    $results= @()
     try {
-        $results = Search-AzGraph -Query "$queryContent" -UseTenantScope -First 1000
+        $temp = Search-AzGraph -Query "$queryContent" -UseTenantScope -First 1000
+        $results += $temp
+
+        while($temp.SkipToken) {
+            $temp = Search-AzGraph -Query "$queryContent" -SkipToken $temp.SkipToken -UseTenantScope -First 1000
+            $results += $temp
+        } 
     }
     catch {
         Write-Log -message "Something went wrong when executing the KQL query in the file $inputFile. Check below message for more information" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"

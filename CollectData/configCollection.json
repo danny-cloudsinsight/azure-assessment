@@ -1,0 +1,37 @@
+{
+    "general": {
+        "rawOutputFolder": "./rawResults/",
+        "logFolder": "./logs/",
+        "writeLogstoConsole": true
+    },
+    "azure": {
+        "queryFolder": "./collectionScripts/azure",
+        "requiredModules": [
+            "Az.ResourceGraph",
+            "Az.Accounts"
+        ]
+    },
+    "entra": {
+        "enabled": true,
+        "requiredModules": [
+            "Microsoft.Graph.Authentication",
+            "Microsoft.Graph.DirectoryObjects",
+            "Microsoft.Graph.Applications",
+            "Microsoft.Graph.Identity.DirectoryManagement",
+            "Microsoft.Graph.Identity.SignIns",
+            "Microsoft.Graph.Identity.Governance",
+            "Microsoft.Graph.Beta.Identity.DirectoryManagement",
+            "Microsoft.Graph.Beta.Identity.SignIns"
+        ],
+        "scopes": [
+            "RoleManagement.Read.Directory",
+            "Application.Read.All",
+            "DeviceManagementServiceConfig.Read.All",
+            "Domain.Read.All",
+            "LicenseAssignment.Read.All",
+            "Policy.Read.All",
+            "DirectoryRecommendations.Read.All"
+        ],
+        "scriptFolder": "./collectionScripts/entra"
+    }
+}

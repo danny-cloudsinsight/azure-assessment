@@ -75,6 +75,15 @@ if ($context) {
     else {
         $info.Add("License", "Unknown")
     }
+
+    # Security Defaults
+    $securityDefaults = Get-MgPolicyIdentitySecurityDefaultEnforcementPolicy
+    if ($securityDefaults.IsEnabled) {
+        $info.Add("Security Defaults", "Enabled")
+    }
+    else {
+        $info.Add("Security Defaults", "Disabled")
+    }
 }
 else {
     Write-Log -message "No connection to Microsoft Graph. Cannot execute the generalInfo inventory." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"

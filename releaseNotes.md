@@ -1,8 +1,16 @@
 # Version 0.4
 
-- Add queries to check the rules in PSRule.Rules.Azure:
+- Add queries to check additional Azure components:
   - AzurePolicy
   - Defender plans
+- Add additional scripts to query Entra ID:
+  - Authentication Methods
+  - Entra Identity Secure Score recommendations
+  - Conditional Access policies
+  - User Settings
+- Added checks for required modules
+- More fine-grained Microsoft Graph scopes
+- Create a zip file with the results
 
 # Version 0.3
 

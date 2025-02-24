@@ -1,0 +1,2 @@
+policyresources
+| where tolower(type) == "microsoft.policyinsights/policystates"
