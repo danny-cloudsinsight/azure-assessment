@@ -1,0 +1,1 @@
+# This script wil take the raw output from the Collect-Data.ps1 script (see rawResults folder) and create an inventory with the most relevant information.

@@ -35,14 +35,13 @@ Following Microsoft Graph scopes are required to run the scripts:
 - "DirectoryRecommendations.Read.All"
 
 > Note: If permission for these scopes has not been given yet, the script will prompt the user to grant the permissions.
-        ]
 
 ## Steps
 
 1. Clone the repo to a folder on your computer
 2. Open a Powershell folder in the folder where you cloned the repo
 3. Validate the content of the *configCollection.json* file and optionally adapt the log and/or rawResults folder.
-4. Run the script *CollectData.ps1*
+4. Run the script *Collect-Data.ps1*
 5. Results will be stored as .json files in the _rawResults_ folder and will also be added to the archive *results.zip*
 
 ## Release Notes
