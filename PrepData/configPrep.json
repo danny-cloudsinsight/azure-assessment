@@ -1,0 +1,8 @@
+{
+    "general": {
+        "rawOutputFolder": "./rawResults/",
+        "cleanedOutputFolder": "./cleanedResults/",
+        "logFolder": "./logs/",
+        "writeLogstoConsole": true
+    }
+}

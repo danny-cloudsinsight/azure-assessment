@@ -5,6 +5,7 @@
         "writeLogstoConsole": true
     },
     "azure": {
+        "enabled": false,
         "queryFolder": "./collectionScripts/azure",
         "requiredModules": [
             "Az.ResourceGraph",
@@ -32,6 +33,37 @@
             "Policy.Read.All",
             "DirectoryRecommendations.Read.All"
         ],
-        "scriptFolder": "./collectionScripts/entra"
+        "scriptFolder": "./collectionScripts/entra",
+        "translateObjectIds": true,
+        "filesToTranslate": [
+            {
+                "fileName": "azure-policy-assignments.json",
+                "attributesContainingObjectId": [
+                    "properties.metadata.createdBy",
+                    "properties.metadata.updatedBy",
+                    "properties.identity.userAssignedIdentities",
+                    "identity.principalId",
+                    "systemData.lastModifiedBy",
+                    "systemData.createdBy"
+                ]
+            },
+            {
+                "fileName": "entraConditionalAccessPolicies.json",
+                "attributesContainingObjectId": [
+                    "Conditions.Users.ExcludeGroups",
+                    "Conditions.Users.ExcludeUsers",
+                    "Conditions.Users.IncludeGroups",
+                    "Conditions.Users.IncludeUsers"
+                ]
+            },
+            {
+                "fileName": "RBAC.json",
+                "attributesContainingObjectId": [
+                    "principalId",
+                    "createdBy",
+                    "updatedBy"
+                ]
+            }
+        ]
     }
 }

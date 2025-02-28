@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 Import-Module ./modules/functions.psm1 -Force
 # Import-Module ./modules/customScripts.psm1 -Force
 
-#region prepare
+#region Prepare
 
 # Ensure the configuration file exists
 if (-not (Test-Path $configFile)) {
@@ -48,7 +48,7 @@ if (-not (Test-Path $config.general.rawOutputFolder)) {
     New-Item -Path $config.general.rawOutputFolder -ItemType Directory
 }
 
-Write-Log -message "Started runInventory script" -logFile $logFile -writeToConsole:$writeToConsole
+Write-Log -message "Started Collect-Data script" -logFile $logFile -writeToConsole:$writeToConsole
 Write-Log -message "Successfully read configuration file: $configFile" -logFile $logFile -writeToConsole:$writeToConsole
 
 Write-Log -message "Collecting Azure resources base information." -logFile $logFile -writeToConsole:$writeToConsole
@@ -57,47 +57,52 @@ Write-Log -message "Collecting Azure resources base information." -logFile $logF
 
 #region Azure
 
-Write-Log -message "Validating required modules for Azure resources inventory." -logFile $logFile -writeToConsole:$writeToConsole
+if ($config.azure.enabled) {
+    Write-Log -message "Validating required modules for Azure resources inventory." -logFile $logFile -writeToConsole:$writeToConsole
 
-foreach ($module in $config.azure.requiredModules) {
-    $installedModule = Get-Module -ListAvailable -Name $module
-    if (-not $installedModule) {
-        Write-Log "Module $module not found. Installing in /modules folder" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
-        Save-Module -Name $module -Path ./modules -Force
-        Import-Module ./modules/$module -Force
+    foreach ($module in $config.azure.requiredModules) {
+        $installedModule = Get-Module -ListAvailable -Name $module
+        if (-not $installedModule) {
+            Write-Log "Module $module not found. Installing in /modules folder" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+            Save-Module -Name $module -Path ./modules -Force
+            Import-Module ./modules/$module -Force
+        }
+        else {
+            Write-Log "Module $($installedModule[0].Name) (version: $($installedModule[0].Version)) found." -logFile $logFile -writeToConsole:$writeToConsole
+        }
+    }
+
+    # Connect to Azure
+    $context = Get-AzContext
+    if ($context) {
+        Write-Log -message "Connected to Azure" -logFile $logFile -writeToConsole:$writeToConsole
     }
     else {
-        Write-Log "Module $($installedModule[0].Name) (version: $($installedModule[0].Version)) found." -logFile $logFile -writeToConsole:$writeToConsole
+        Write-Log -message "No connection to Azure. Running Connect-AzAccount" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+        Write-Log -message "Please logon with your administrative account and select a random subscription (Inventory will always check all resources in the tenant you have access to)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
+        Connect-AzAccount
     }
-}
 
-# Connect to Azure
-$context = Get-AzContext
-if ($context) {
-    Write-Log -message "Connected to Azure" -logFile $logFile -writeToConsole:$writeToConsole
+    # Get all queries in the query folder (and its subfolders)
+    $queries = Get-ChildItem -Path $config.azure.queryFolder -Filter "*.kql" -Recurse
+
+    # Execute each query
+    foreach ($query in $queries) {
+        Write-Log -message "Executing query $($query.BaseName)" -logFile $logFile -writeToConsole:$writeToConsole
+    
+        $results = ExecuteQuery -inputFile $query.FullName -logFile $logFile -writeToConsole:$writeToConsole
+
+        if ($results) {
+            OutputJson -object $results -outputFile "$($config.general.rawOutputFolder)/$($query.BaseName).json"
+        }
+        else {
+            Write-Log "No results for $($query.BaseName)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+        }
+        Clear-Variable results
+    }
 }
 else {
-    Write-Log -message "No connection to Azure. Running Connect-AzAccount" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
-    Write-Log -message "Please logon with your administrative account and select a random subscription (Inventory will always check all resources in the tenant you have access to)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
-    Connect-AzAccount
-}
-
-# Get all queries in the query folder (and its subfolders)
-$queries = Get-ChildItem -Path $config.azure.queryFolder -Filter "*.kql" -Recurse
-
-# Execute each query
-foreach ($query in $queries) {
-    Write-Log -message "Executing query $($query.BaseName)" -logFile $logFile -writeToConsole:$writeToConsole
-    
-    $results = ExecuteQuery -inputFile $query.FullName -logFile $logFile -writeToConsole:$writeToConsole
-
-    if ($results) {
-        OutputJson -object $results -outputFile "$($config.general.rawOutputFolder)/$($query.BaseName).json"
-    }
-    else {
-        Write-Log "No results for $($query.BaseName)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
-    }
-    Clear-Variable results
+    Write-Log -message "Azure resources inventory is not enabled, no Azure resources inventory will be collected" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
 }
 
 #endregion Azure
@@ -135,6 +140,65 @@ if ($config.entra.enabled) {
             Write-Log -message "No results for $($script.BaseName)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         }
     }
+
+
+    # Get translation of Entra ID Object IDs to display names
+    if ($config.entra.translateObjectIds) {
+        Write-Log -message "Translating Entra ID Object IDs to display names" -logFile $logFile -writeToConsole:$writeToConsole
+
+        $objectIdsToTranslate = @()
+
+        # Go through all files that need translation to find the object IDs
+        $filesRequiringTranslation = $config.entra.filesToTranslate
+        foreach ($file in $filesRequiringTranslation) {
+            $content = Get-Content -Path "$($config.general.rawOutputFolder)/$($file.fileName)" -Raw | ConvertFrom-Json
+            foreach ($item in $content) {
+                foreach ($attribute in $file.attributesContainingObjectId) {
+                    $attributeParts = $attribute -split '\.'  # Split the attribute path into an array
+                    $value = $item
+                    foreach ($part in $attributeParts) {
+                        if ($null -ne $value -and $value.PSObject.Properties[$part]) {
+                            $value = $value.$part  # Drill down step by step
+                        }
+                        else {
+                            $value = $null
+                            break
+                        }
+                    }
+                    # Check if the returned value is a valid GUID
+                    $test = [System.Guid]::empty
+                    if ([System.Guid]::TryParse($value,[System.Management.Automation.PSReference]$test)) {
+                        $objectIdsToTranslate += $value
+                    }
+                }
+            }
+        }
+
+        $translatedObjectIds = [System.Collections.ArrayList]::new()
+
+        $objectIdsToTranslate = $objectIdsToTranslate | Sort-Object -Unique
+    
+        foreach ($id in $objectIdsToTranslate) {
+            try {
+                $displayName = (Get-MgDirectoryObject -DirectoryObjectId $id -ErrorAction Stop | Select-Object -ExpandProperty AdditionalProperties).displayName
+            }
+            catch {
+                Write-Log -message "Something went wrong when collecting the displayName for the object $id" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+                $displayName = $id
+            }
+            $tempObject = [PSCustomObject]@{
+                id          = $id
+                displayName = $displayName
+            }
+            [void]$translatedObjectIds.Add($tempObject)
+        }
+
+        OutputJson -object $translatedObjectIds -outputFile "$($config.general.rawOutputFolder)/objectIdTranslations.json"
+    }
+    else {
+        Write-Log -message "Entra ID Object ID translation is not enabled" -logFile $logFile -writeToConsole:$writeToConsole
+    }
+
 }
 else {
     Write-Log -message "Microsoft Graph is not enabled, no Entra ID inventory will be collected" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
@@ -144,4 +208,7 @@ else {
 
 # Create zip file of results
 
-Compress-Archive -Path $config.general.rawOutputFolder -DestinationPath "results.zip" -Force
+# Copy the config file used to the raw output folder
+Copy-Item -Path $configFile -Destination "$($config.general.rawOutputFolder)/configFileUsed.json" -Force
+
+Compress-Archive -Path "$($config.general.rawOutputFolder)/*" -DestinationPath "rawResults.zip" -Force

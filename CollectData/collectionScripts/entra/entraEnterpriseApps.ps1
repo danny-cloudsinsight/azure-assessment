@@ -99,6 +99,7 @@ if ($context) {
             Type                 = "entra/appregistrations"
             DisplayName          = $application.DisplayName
             AppId                = $application.AppId
+            ObjectID             = $application.Id
             Description          = $application.Description
             PasswordCredentials  = $passwordObject
             FederatedCredentials = $federatedCredentialsObject
