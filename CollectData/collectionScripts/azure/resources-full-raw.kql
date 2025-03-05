@@ -1,0 +1,10 @@
+resources
+| join kind=leftouter(resourcecontainers | where type == "microsoft.resources/subscriptions" | project subscriptionId, subscriptionName = name) on subscriptionId
+| join kind=leftouter(
+    appserviceresources
+    | extend id_parts = split(id, "/")
+    | extend resourceID = strcat_array(array_slice(id_parts, 0, array_length(id_parts) - 3), "/")
+    | project resourceID, configProperties = properties) on $left.id == $right.resourceID
+| project-away resourceID
+| project-away subscriptionId1
+| order by name asc

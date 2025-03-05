@@ -1,0 +1,5 @@
+policyresources
+| where tolower(type) == "microsoft.policyinsights/policystates"
+| join kind=leftouter(resourcecontainers | where type == "microsoft.resources/subscriptions" | project subscriptionId, name) on subscriptionId
+| project-away subscriptionId1
+| project-rename subscriptionName = name1

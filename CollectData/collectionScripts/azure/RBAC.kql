@@ -1,0 +1,33 @@
+authorizationresources
+| where type == "microsoft.authorization/roleassignments"
+| extend
+    scopeType =  case (properties.scope =="/", "managementGroups",
+                        properties.scope startswith("/providers/Microsoft.Management/"), "managementGroups",
+                        properties.scope startswith("/providers/Microsoft.Subscription/aliases"), "subscriptionAlias",
+                        properties.scope contains("/providers/"), "resource",
+                        properties.scope contains("/resourceGroups/"), "resourceGroups",
+                        "subscriptions" ),
+    id = tostring(properties.roleDefinitionId),
+    scope = tostring(properties.scope)
+| join kind=leftouter(
+    authorizationresources
+    | where type == "microsoft.authorization/roledefinitions"
+) on id
+| join kind=leftouter resourcecontainers on $left.scope == $right.id
+| extend
+    roleName = properties1.roleName,
+    scopeName = case (properties.scope == "/", "root", 
+                        scopeType in ("managementGroups", "subscriptions"), iff(isnotnull(properties2.displayName), properties2.displayName, iff(isnotnull(name2), name2, scope)),
+                        scopeType == "resource", split(properties.scope,"/providers/")[-1],
+                        split(properties.scope,"/")[-1])
+| project
+    type,
+    scopeType,
+    scopeName,
+    roleName,
+    principalType = properties.principalType,
+    principalId = properties.principalId,
+    createdOn = format_datetime(todatetime(properties.createdOn), "dd/MM/yyyy hh:mm:ss"),
+    createdBy = properties.createdBy,
+    updatedOn = format_datetime(todatetime(properties.updatedOn), "dd/MM/yyyy hh:mm:ss"),
+    updatedBy = properties.updatedBy
