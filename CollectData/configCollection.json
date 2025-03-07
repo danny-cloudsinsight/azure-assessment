@@ -5,7 +5,7 @@
         "writeLogstoConsole": true
     },
     "azure": {
-        "enabled": false,
+        "enabled": true,
         "queryFolder": "./collectionScripts/azure",
         "requiredModules": [
             "Az.ResourceGraph",
@@ -33,7 +33,7 @@
             "Policy.Read.All",
             "DirectoryRecommendations.Read.All"
         ],
-        "scriptFolder": "./collectionScripts/entra",
+        "scriptFolder": "./collectionScripts/entraTest",
         "translateObjectIds": true,
         "filesToTranslate": [
             {

@@ -1,6 +1,6 @@
 authorizationresources
 | where type == "microsoft.authorization/roleassignments"
-| where properties.principalId == "%ID%"
+| where properties.principalId in (%ID%)
 | extend
     scopeType =  case (properties.scope =="/", "managementGroups",
                         properties.scope startswith("/providers/Microsoft.Management/"), "managementGroups",
@@ -21,6 +21,7 @@ authorizationresources
                         scopeType in ("managementGroups", "subscriptions"), iff(isnotnull(properties2.displayName), properties2.displayName, name2),
                         split(properties.scope,"/")[-1])
 | project
+    principal = properties.principalId,
     scopeType,
     scopeName,
     roleName

@@ -24,7 +24,6 @@ PS> echo "resources | order by name asc " > "./queryFile.kql"
 PS> ExecuteQuery -inputFile "./queryFile.kql"
 
 .NOTES
-This script can return max. 1000 items 
 #>
 function ExecuteQuery {
     param
@@ -60,11 +59,11 @@ function ExecuteQuery {
 
     $results= @()
     try {
-        $temp = Search-AzGraph -Query "$queryContent" -UseTenantScope -First 1000
+        $temp = Search-AzGraph -Query "$queryContent" -UseTenantScope -First 1000 -ErrorAction Stop
         $results += $temp
 
         while($temp.SkipToken) {
-            $temp = Search-AzGraph -Query "$queryContent" -SkipToken $temp.SkipToken -UseTenantScope -First 1000
+            $temp = Search-AzGraph -Query "$queryContent" -SkipToken $temp.SkipToken -UseTenantScope -First 1000 -ErrorAction Stop
             $results += $temp
         } 
     }

@@ -84,6 +84,9 @@ if ($context) {
     else {
         $info.Add("Security Defaults", "Disabled")
     }
+
+    # Add type (required for executing PSRules)
+    $info.Add("type", "entra/generalInfo")
 }
 else {
     Write-Log -message "No connection to Microsoft Graph. Cannot execute the generalInfo inventory." -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
