@@ -33,7 +33,7 @@
             "Policy.Read.All",
             "DirectoryRecommendations.Read.All"
         ],
-        "scriptFolder": "./collectionScripts/entraTest",
+        "scriptFolder": "./collectionScripts/entra",
         "translateObjectIds": true,
         "filesToTranslate": [
             {
