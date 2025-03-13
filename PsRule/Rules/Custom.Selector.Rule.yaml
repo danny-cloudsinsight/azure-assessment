@@ -1,0 +1,137 @@
+---
+# Synopsis: Resources that support tags.
+apiVersion: github.com/microsoft/PSRule/v1
+kind: Selector
+metadata:
+  name: Azure.Resource.SupportsTags
+  annotations:
+    export: true
+spec:
+  if:
+    allOf:
+
+    # Only include resource types
+    - type: '.'
+      like: 'Microsoft.*/*'
+
+    # Exclude resource providers that do not support tags
+    - type: '.'
+      notStartsWith:
+      - Microsoft.ADHybridHealthService/
+      - Microsoft.Addons/
+      - Microsoft.Advisor/
+      - Microsoft.Billing/
+      - Microsoft.BillingBenefits/
+      - Microsoft.Blueprint/
+      - Microsoft.Capacity/
+      - Microsoft.ChangeAnalysis/
+      - Microsoft.Classic
+      - Microsoft.Commerce/
+      - Microsoft.Consumption/
+      - Microsoft.CustomerLockbox/
+      - Microsoft.Features/
+      - Microsoft.Gallery/
+      - Microsoft.GuestConfiguration/
+      - Microsoft.HybridConnectivity/
+      - Microsoft.IoTSecurity/
+      - Microsoft.Security/
+      - Microsoft.Subscription/
+      - microsoft.support/
+      - Microsoft.WorkloadMonitor/
+      - Microsoft.ManagedServices/
+      - Microsoft.Management/
+      - Microsoft.PolicyInsights/
+
+    # Exclude resource types that do not support tags
+    - type: '.'
+      notIn:
+      - Microsoft.Subscription
+      - Microsoft.AzureActiveDirectory/b2ctenants
+      - Microsoft.OperationsManagement/solutions
+      - Microsoft.Kubernetes/registeredSubscriptions
+      - Microsoft.Network/privateDnsZonesInternal
+    - type: '.'
+      notEndsWith:
+      - /providers/roleAssignments
+      - /providers/diagnosticSettings
+
+    # Specific exception cases
+    - anyOf:
+      - type: '.'
+        notStartsWith: Microsoft.Resources/
+      - type: '.'
+        in:
+        - Microsoft.Resources/deploymentScripts
+        - Microsoft.Resources/resourceGroups
+        - Microsoft.Resources/templateSpecs
+        - Microsoft.Resources/templateSpecs/versions
+
+    - anyOf:
+      - type: '.'
+        notStartsWith: Microsoft.CostManagement/
+      - type: '.'
+        in:
+        - Microsoft.CostManagement/Connectors
+
+    - anyOf:
+      - type: '.'
+        notStartsWith: Microsoft.KubernetesConfiguration/
+      - type: '.'
+        in:
+        - Microsoft.KubernetesConfiguration/privateLinkScopes
+
+    - anyOf:
+      - type: '.'
+        notStartsWith: Microsoft.ManagedIdentity/
+      - type: '.'
+        in:
+        - Microsoft.ManagedIdentity/userAssignedIdentities
+
+    - anyOf:
+      - type: '.'
+        notStartsWith: Microsoft.Authorization/
+      - type: '.'
+        in:
+        - Microsoft.Authorization/resourceManagementPrivateLinks
+
+    - anyOf:
+      - type: '.'
+        notStartsWith: Microsoft.Insights/
+      - type: '.'
+        in:
+        - Microsoft.Insights/actionGroups
+        - Microsoft.Insights/activityLogAlerts
+        - Microsoft.Insights/alertRules
+        - Microsoft.Insights/autoscaleSettings
+        - Microsoft.Insights/components
+        - Microsoft.Insights/dataCollectionEndpoints
+        - Microsoft.Insights/dataCollectionRules
+        - Microsoft.Insights/guestDiagnosticSettings
+        - Microsoft.Insights/metricAlerts
+        - Microsoft.Insights/notificationGroups
+        - Microsoft.Insights/privateLinkScopes
+        - Microsoft.Insights/scheduledQueryRules
+        - Microsoft.Insights/webTests
+        - Microsoft.Insights/workbooks
+        - Microsoft.Insights/workbookTemplates
+
+    - anyOf:
+      - type: '.'
+        notStartsWith: Microsoft.Chaos/
+      - type: '.'
+        in:
+        - Microsoft.Chaos/experiments
+
+    - anyOf:
+      - type: '.'
+        notLike: 'Microsoft.*/*/*'
+      - type: '.'
+        in:
+        - Microsoft.Automation/automationAccounts/runbooks
+        - Microsoft.Automation/automationAccounts/configurations
+        - Microsoft.Automation/automationAccounts/compilationJobs
+        - Microsoft.Automation/automationAccounts/modules
+        - Microsoft.Automation/automationAccounts/nodeConfigurations
+        - Microsoft.Automation/automationAccounts/python2Packages
+        - Microsoft.Automation/automationAccounts/watchers
+        - Microsoft.Resources/templateSpecs/versions

@@ -7,6 +7,10 @@
 **/results.zip
 **/rawResults.zip
 **/cleanedResults/*
+PsRule/Output/*
+
+# Ignore all test files
+PsRule/Tests/*
 
 #Ignore Apple system file
 .DS_Store
@@ -16,3 +20,4 @@ _draft/**
 
 # Ignore log files
 *.log
+

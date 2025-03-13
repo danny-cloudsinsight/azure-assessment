@@ -1,0 +1,31 @@
+output:
+  culture: [ 'en-US' ]
+  as: Detail
+  encoding: UTF8
+  format: Csv
+  outcome: Processed
+  style: Detect
+binding:
+  preferTargetInfo: true
+  targetName:
+  - ResourceName
+  - name
+  - scopeName
+  - DisplayName
+  targetType:
+  - ResourceType
+  - type
+  - scopeType
+  - Category
+  field:
+    resourceId: [ 'ResourceId', 'id' ]
+    subscriptionId: [ 'subscriptionId' ]
+    resourceGroupName: [ 'resourceGroupName' ]
+execution:
+  unprocessedObject: Ignore
+rule:
+  exclude:
+    - 'Azure.Resource.UseTags'
+    - 'Azure.RBAC.UseRGDelegation'
+    - 'Azure.RBAC.UseGroups'
+    - 'Azure.RBAC.PIM'
