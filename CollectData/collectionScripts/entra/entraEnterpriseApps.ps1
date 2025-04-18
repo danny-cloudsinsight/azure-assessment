@@ -12,6 +12,7 @@ This function will gather the following information on the enterprise apps that 
 - AppId
 - Description
 - Secrets and their expiry date
+- Certificates and their expiry date
 - Federated Credentials
 - App Roles
 - Creation Date
@@ -39,15 +40,31 @@ $context = Get-MgContext
 if ($context) {
     Write-Log -message "Gathering info on enterprise apps." -logFile $logFile -writeToConsole:$writeToConsole
     $result = [System.Collections.ArrayList]::new()
-    $requiredProperties = "AppId, DisplayName, Description, PasswordCredentials, FederatedIdentityCredentials, AppRoles, CreatedDateTime, Owners, SignInAudience"
-    $applicationList = Get-MgApplication -ExpandProperty FederatedIdentityCredentials -Property $requiredProperties
-    $numberOfApps = $applicationList.Count
+    $requiredProperties = "Id, AppId, DisplayName, Description, KeyCredentials, PasswordCredentials, FederatedIdentityCredentials, AppRoles, CreatedDateTime, Owners, SignInAudience"
+    # Get number of applications to be processed
+    $null = Get-MgApplication -ConsistencyLevel eventual -CountVariable appCount
+    $applicationList = Get-MgApplication -Property $requiredProperties -Top $($global:appCount)
+    $numberOfApps = $global:appCount
     $counter = 0
     $rolesQueryPath = $PSCommandPath.Replace("entraEnterpriseApps.ps1", "RBACforEntraId.kql")
     foreach ($application in $applicationList) {
         $counter += 1
-        Write-Log -message "$counter/$numberOfApps - Gathering info on $($application.DisplayName)" -logFile $logFile -writeToConsole:$writeToConsole
+        Write-Log -message "$counter/$numberOfApps ($($applicationList.Count)) - Gathering info on $($application.DisplayName)" -logFile $logFile -writeToConsole:$writeToConsole
         # Create calculated members for application
+        ## Certificate Credentials
+        $certificateObject = @()
+        foreach ($certificate in $application.KeyCredentials) {
+            $tempCertificateObject = @{}
+            if ($certificate.DisplayName) {
+                $tempCertificateObject["displayName"] = $certificate.DisplayName
+            }
+            else {
+                $tempCertificateObject["displayName"] = ""
+            }
+            $tempCertificateObject["EndDate"] = $certificate.EndDateTime
+            $certificateObject += $tempCertificateObject
+        }
+
         ## PassWordCredentials
         $passwordObject = @()
         foreach ($password in $application.PasswordCredentials) {
@@ -65,10 +82,11 @@ if ($context) {
 
         ## FederatedCredentials
         $federatedCredentialsObject = @()
-        foreach ($credential in $application.FederatedIdentityCredentials) {
+        $appFederatedCredentials = Get-MgApplicationFederatedIdentityCredential -ApplicationId $($application.Id) -Property "Name, Issuer, Subject"
+        foreach ($credential in $appFederatedCredentials) {
             $tempFederatedCredentialObject = @{
-                Name = $credential.name
-                Issuer = $credential.Issuer
+                Name    = $credential.name
+                Issuer  = $credential.Issuer
                 Subject = $credential.Subject
             }
             $federatedCredentialsObject += $tempFederatedCredentialObject
@@ -86,7 +104,7 @@ if ($context) {
         $rolesObject = @()
         foreach ($role in $queryResults) {
             $tempRoleObject = @{
-                roleName = $role.roleName
+                roleName  = $role.roleName
                 scopeName = $role.scopeName
                 scopeType = $role.scopeType
             }
@@ -96,18 +114,19 @@ if ($context) {
 
         # Create application custom object to add to array
         $tempObject = [PSCustomObject]@{
-            Type                 = "entra/appregistrations"
-            DisplayName          = $application.DisplayName
-            AppId                = $application.AppId
-            ObjectID             = $application.Id
-            Description          = $application.Description
-            PasswordCredentials  = $passwordObject
-            FederatedCredentials = $federatedCredentialsObject
-            AppRoles             = $appRolesList
-            CreatedDateTime      = ($application.CreatedDateTime).ToString("dd MMM yyyy hh:mm")
-            Owners               = $application.Owners
-            SignInAudience       = $application.SignInAudience
-            Roles                = $rolesObject
+            Type                   = "entra/appregistrations"
+            DisplayName            = $application.DisplayName
+            AppId                  = $application.AppId
+            ObjectID               = $application.Id
+            Description            = $application.Description
+            CertificateCredentials = $certificateObject
+            PasswordCredentials    = $passwordObject
+            FederatedCredentials   = $federatedCredentialsObject
+            AppRoles               = $appRolesList
+            CreatedDateTime        = ($application.CreatedDateTime).ToString("dd MMM yyyy hh:mm")
+            Owners                 = $application.Owners
+            SignInAudience         = $application.SignInAudience
+            Roles                  = $rolesObject
         }
         [void]$result.Add($tempObject)
     }
