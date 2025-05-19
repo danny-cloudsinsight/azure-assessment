@@ -8,7 +8,7 @@ param(
  
 # Ensure the inputfile exists
 if (-not (Test-Path $inputFile)) {
-    throw "Configuration file not found: $inputFile"
+    throw "Input file not found: $inputFile"
 }
 
 try {

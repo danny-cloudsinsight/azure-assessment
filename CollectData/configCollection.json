@@ -5,7 +5,7 @@
         "writeLogstoConsole": true
     },
     "azure": {
-        "enabled": false,
+        "enabled": true,
         "queryFolder": "./collectionScripts/azure",
         "requiredModules": [
             "Az.ResourceGraph",
@@ -13,7 +13,7 @@
         ]
     },
     "entra": {
-        "enabled": true,
+        "enabled": false,
         "requiredModules": [
             "Microsoft.Graph.Authentication",
             "Microsoft.Graph.DirectoryObjects",
@@ -34,7 +34,7 @@
             "DirectoryRecommendations.Read.All"
         ],
         "scriptFolder": "./collectionScripts/entra",
-        "translateObjectIds": true,
+        "translateObjectIds": false,
         "filesToTranslate": [
             {
                 "fileName": "azure-policy-assignments.json",
