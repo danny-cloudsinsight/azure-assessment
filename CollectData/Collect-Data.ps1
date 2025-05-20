@@ -93,13 +93,30 @@ if ($config.azure.enabled) {
         $results = ExecuteQuery -inputFile $query.FullName -logFile $logFile -writeToConsole:$writeToConsole
 
         if ($results) {
-            OutputJson -object $results -outputFile "$($config.general.rawOutputFolder)/$($query.BaseName).json"
+            OutputJson -object $results -outputFile "$($config.general.rawOutputFolder)/$($query.BaseName).json" -logFile $logFile -writeToConsole:$writeToConsole
         }
         else {
             Write-Log "No results for $($query.BaseName)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
         }
         Clear-Variable results
     }
+
+    # Get all subresources for Service Bus and API Management
+    $subResourceScripts = Get-ChildItem -Path $config.azure.queryFolder -Filter "*.ps1" -Recurse
+    foreach ($script in $subResourceScripts) {
+        Write-Log -message "Executing subresource script $($script.BaseName)" -logFile $logFile -writeToConsole:$writeToConsole
+
+        $results = & $script.FullName -logFile $logFile -writeToConsole:$writeToConsole
+
+        if($results) {
+            OutputJson -object $results -outputFile "$($config.general.rawOutputFolder)/$($script.BaseName).json" -logFile $logFile -writeToConsole:$writeToConsole
+        }
+        else {
+            Write-Log "No results for $($script.BaseName)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
+        }
+        Clear-Variable results
+    }
+
 }
 else {
     Write-Log -message "Azure resources inventory is not enabled, no Azure resources inventory will be collected" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "WARNING"
