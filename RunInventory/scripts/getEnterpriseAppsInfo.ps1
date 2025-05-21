@@ -37,4 +37,4 @@ foreach($enterpriseApp in $enterpriseApps) {
     }
 }
 
-$appsWithSecrets | Export-Csv -Path "../results/enterpriseAppsWithSecrets.csv" -NoTypeInformation -Encoding UTF8
+$appsWithSecrets 

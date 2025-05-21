@@ -1,3 +1,15 @@
+# Version 0.5
+
+- Collect the following subresources
+  - API Management: 
+    - APIs
+    - Backends
+    - Products
+    - Subscriptions
+  - Service Bus namespace:
+    - Topic
+    - Queue
+
 # Version 0.4
 
 - Add queries to check additional Azure components:
