@@ -47,3 +47,7 @@ Following Microsoft Graph scopes are required to run the scripts:
 ## Release Notes
 
 See [Release Notes](./releaseNotes.md)
+
+## Version
+
+2025.05.23-13.54

@@ -48,7 +48,8 @@ if($endpointOverview){
     Write-Log -message "Total Endpoints: $($endpointOverview.Count)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
     Write-Log -message "Total Public Endpoints: $(($endpointOverview | Where-Object { $_.PublicEndpoint -eq 'Yes' }).Count)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
     Write-Log -message "Total Endpoints with private connection: $(($endpointOverview | Where-Object { $_.PrivateEndpoint -eq 'Yes' }).Count)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
-    Write-Log -message "Total completely private endpoints: $(($endpointOverview | Where-Object { $_.PublicEndpoint -eq 'No' -and $_.PrivateEndpoint -eq 'Yes' }).Count)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
+    Write-Log -message "Total completely private endpoints: $(($endpointOverview | Where-Object { $_.PublicEndpoint -eq 'No'}).Count)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
+    Write-Log -message "Total endpoints where private connection is not supported: $(($endpointOverview | Where-Object { $_.Supported -eq 'No'}).Count)" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
 
 }else {
     Write-Log -message "Something went wrong when collecting all endpoints" -logFile $logFile -writeToConsole:$writeToConsole -severityLevel "INFO"
